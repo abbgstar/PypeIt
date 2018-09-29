@@ -66,11 +66,15 @@ class GeminiGNIRSSpectrograph(spectrograph.Spectrograph):
         # Set slits and tilts parameters
         par['calibrations']['tilts']['order'] = 2
         par['calibrations']['tilts']['tracethresh'] = [1000, 50, 50, 50, 50]
-        par['calibrations']['slits']['polyorder'] = 4
-        #par['calibrations']['slits']['maxshift'] = 0.5
-        par['calibrations']['slits']['pcatype'] = 'pixel'
-        par['calibrations']['slits']['sigdetect'] = 30
-        par['calibrations']['slits']['pcapar'] = [3, 2, 1,0]
+        par['calibrations']['slits']['polyorder'] = 5
+        par['calibrations']['slits']['maxshift'] = 0.5
+        par['calibrations']['slits']['min_slit_width'] = 4.0
+        par['calibrations']['slits']['number'] = 6
+        par['calibrations']['slits']['pcatype'] = 'order'
+        par['calibrations']['slits']['sigdetect'] = 300
+        #par['calibrations']['slits']['sobel_mode'] = 'constant'
+        #par['calibrations']['slits']['diffpolyorder'] = 1
+        par['calibrations']['slits']['pcapar'] = [4, 3, 2, 1, 0]
         # Scienceimage default parameters
         par['scienceimage'] = pypeitpar.ScienceImagePar()
         # Always flux calibrate, starting with default parameters
