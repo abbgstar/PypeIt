@@ -99,8 +99,23 @@ def load_headers(datlines, spectrograph, strict=True):
                 try:
                     value = headarr[head_idx][hkey]
                 except KeyError: # Keyword not found in header
-                    msgs.warn("{:s} keyword not in header. Setting to None".format(hkey))
-                    value = str('None')
+                    if kw == 'binning':
+                        bin_x = None
+                        bin_y = None
+                        for kw_bin, hkey_bin in head_keys[head_idx].items():
+                            if kw_bin == 'binning_x':
+                                bin_x = headarr[head_idx][hkey_bin]
+                            if kw_bin == 'binning_y':
+                                bin_y = headarr[head_idx][hkey_bin]
+                        if bin_x is not None and bin_y is not None:
+                            value = "{},{}".format(bin_x,bin_y)
+                            msgs.warn("{:s} keyword set from binning_x and binning_y.".format(hkey))
+                        else:
+                            value = str('None')
+                            msgs.warn("{:s} keyword not in header. Setting to None".format(hkey))
+                    else:
+                        msgs.warn("{:s} keyword not in header. Setting to None".format(hkey))
+                        value = str('None')
 #                except IndexError:
 #                    debugger.set_trace()
                 # Convert the input time into hours -- Should we really do this here??
@@ -248,7 +263,8 @@ def load_specobj(fname):
         if hdu.name == 'PRIMARY':
             continue
         # Parse name
-        objp = hdu.name.split('-')
+        idx = hdu.name
+        objp = idx.split('-')
         if objp[-2][0:3] == 'DET':
             det = int(objp[-2][3:])
         else:
@@ -262,16 +278,17 @@ def load_specobj(fname):
         #                           float(objp[0][1:])/1000., 'unknown')
         # New and wrong
         try:
-            specobj = specobjs.SpecObj(shape, [float(objp[1][4:])/10000.]*2,
-                                       int(objp[0][4:]),
-                                       config='dummy_config',
-                                       slitid=1, det=det,
-                                       spat_pixpos=100)  # DUMMY
+            specobj = specobjs.SpecObj(shape, None, None, idx = idx)
         except:
-            msgs.error("BUG ME")
             debugger.set_trace()
+            msgs.error("BUG ME")
+        # TODO -- Figure out if this is a default
         # Add trace
-        specobj.trace = spec['TRACE']
+        try:
+            specobj.trace = spec['TRACE']
+        except:
+            # KLUDGE!
+            specobj.trace = np.arange(len(spec['BOX_WAVE']))
         # Add spectrum
         if 'BOX_COUNTS' in spec.keys():
             for skey in speckeys:

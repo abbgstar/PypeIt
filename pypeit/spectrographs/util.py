@@ -78,6 +78,7 @@ def load_spectrograph(spectrograph=None):
     if spectrograph == 'vlt_xshooter_nir':
         return spectrographs.vlt_xshooter.VLTXShooterNIRSpectrograph()
 
+    debugger.set_trace()
     msgs.error("Spectrograph not supported")
 
 

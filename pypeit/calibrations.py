@@ -487,6 +487,7 @@ class Calibrations(object):
             # Compute the plate scale in arcsec which is needed to trim short slits
             scidx = np.where((self.fitstbl['sci_ID'] == self.sci_ID) & self.fitstbl['science'])[0][0]
             binspatial, binspectral = parse.parse_binning(self.fitstbl['binning'][scidx])
+            ## Old code: binspatial, binspectral = parse.parse_binning(self.fitstbl['binning'][scidx])
             plate_scale = binspatial*self.spectrograph.detector[self.det-1]['platescale']
 
             # Now we go forth
@@ -690,7 +691,7 @@ class Calibrations(object):
                                              par=self.par['tilts'], det=self.det,
                                              setup=self.setup, master_dir=self.master_dir,
                                              mode=self.par['masters'],
-                                             tslits_dict=self.tslits_dict, redux_path=self.redux_path, bpm = self.msbpm)
+                                             tslits_dict=self.tslits_dict, redux_path=self.redux_path, bpm=self.msbpm)
         # Master
         self.tilts_dict = self.waveTilts.master()
         if self.tilts_dict is None:

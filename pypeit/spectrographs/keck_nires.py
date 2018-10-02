@@ -28,7 +28,8 @@ class KeckNIRESpectrograph(spectrograph.Spectrograph):
         self.detector = [
                 # Detector 1
                 DetectorPar(dataext         = 0,
-                            dispaxis        = -1,
+                            dispaxis        = 1,
+                            dispflip        = True,
                             xgap            = 0.,
                             ygap            = 0.,
                             ysize           = 1.,
@@ -94,6 +95,10 @@ class KeckNIRESpectrograph(spectrograph.Spectrograph):
         match_criteria = {}
         for key in fsort.ftype_list:
             match_criteria[key] = {}
+
+        # Bias
+        match_criteria['bias']['match'] = {}
+        match_criteria['bias']['match']['binning'] = ''
 
         match_criteria['standard']['match'] = {}
 
