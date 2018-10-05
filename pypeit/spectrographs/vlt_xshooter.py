@@ -165,7 +165,7 @@ class VLTXShooterNIRSpectrograph(VLTXShooterSpectrograph):
         arcparam['lowest_nsig'] = 10.0         # Min significance for arc lines to be used
         arcparam['wvmnx'] = [8000.,26000.]  # Guess at wavelength range
         # These parameters influence how the fts are done by pypeit.core.wavecal.fitting.iterative_fitting
-        arcparam['match_toler'] = 3 # 3 was default, 1 seems to work better        # Matcing tolerance (pixels)
+        arcparam['match_toler'] = 1 # 3 was default, 1 seems to work better        # Matcing tolerance (pixels)
         arcparam['func'] = 'legendre'       # Function for fitting
         arcparam['n_first'] = 2             # Order of polynomial for first fit
         arcparam['n_final'] = 4  #was default    # Order of polynomial for final fit
