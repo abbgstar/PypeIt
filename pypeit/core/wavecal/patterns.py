@@ -260,7 +260,8 @@ def score_quad_matches(fidx):
     # Return
     return scores
 
-
+# JFH, RC : This could be made much faster by computing the list of detector patterns and line list patterns in
+# separate for loops and compares the two lists. Currently it regenerates the
 @nb.jit(nopython=True, cache=True)
 def triangles(detlines, linelist, npixels, detsrch=5, lstsrch=10, pixtol=1.0):
     """ Brute force pattern recognition using triangles. A triangle contains
