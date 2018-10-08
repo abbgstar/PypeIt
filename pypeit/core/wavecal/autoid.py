@@ -357,6 +357,7 @@ class General:
       final best guess of the line IDs
     """
 
+    # JFH change nstore = 2?
     def __init__(self, spec, lines, ok_mask=None, min_nsig=50.0, nonlinear_counts = 1e10, islinelist=False,
               outroot=None, debug = False, verbose=False,
               fit_parm=None, lowest_nsig=10., rms_threshold=0.15,
@@ -404,7 +405,8 @@ class General:
             self.run_kdtree()
         else:
             # Set up the grids to be used for pattern matching
-            self.set_grids()
+            #self.set_grids()
+            self.set_grids(ngridw=5000)
             msgs.info("Using brute force pattern matching algorithm to wavelength calibrate")
             self.run_brute()
 
@@ -457,6 +459,16 @@ class General:
         return
 
     def run_brute_loop(self, slit, arrerr=None, wavedata=None):
+        """
+
+        rng_list = number of lines including achor points between two anchor points for pattern recognition
+        pix_tol = tolerance for lval - dval in matching of patterns between detector list and line list.
+        :param slit:
+        :param arrerr:
+        :param wavedata:
+        :return:
+        """
+
         # Set the parameter space that gets searched
         rng_poly = [3, 4]            # Range of algorithms to check (only trigons+tetragons are supported)
         rng_list = range(3, 6)       # Number of lines to search over for the linelist
