@@ -20,21 +20,10 @@ sanctity of the files nor process the calibrations in any manner.
 calcheck
 ========
 
-The procedure is simple.  Add the following line to your
-.pypeit file::
+The procedure is simple.  Provide the calcheck flag (i.e. -c)
+when execiting your pypeit file::
 
-    run calcheck True
-
-You must also verify that your .pypeit file does **not**
-include this line::
-
-    run setup True   # Cannot be set for calcheck or full reduction
-
-Either set 'run setup' to False, comment it out, or remove it altogether.
-
-You may then run PypeIt, e.g.::
-
-    run_pypeit kast_blue_setup_A.pypeit
+    run_pypeit -c kast_blue_setup_A.pypeit
 
 The code will exit with error if there are insufficient calibration
 frames.  Otherwise, it will exit after organizing the files and
