@@ -69,7 +69,7 @@ class GeminiGNIRSSpectrograph(spectrograph.Spectrograph):
         par['calibrations']['biasframe']['useframe'] = 'overscan'
         # Set slits and tilts parameters
         par['calibrations']['tilts']['order'] = 2
-        par['calibrations']['tilts']['tracethresh'] = [10, 10, 10, 10, 10]
+        par['calibrations']['tilts']['tracethresh'] = [10, 10, 10, 10, 10, 10]
         par['calibrations']['slits']['polyorder'] = 5
         par['calibrations']['slits']['maxshift'] = 0.5
         par['calibrations']['slits']['min_slit_width'] = 4.0
