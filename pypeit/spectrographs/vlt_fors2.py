@@ -203,7 +203,7 @@ class VLTFORS2Chip1Spectrograph(VLTFORS2Spectrograph):
                 platescale=0.126,
                 darkcurr=0.0,
                 saturation=65535.,
-                nonlinear=0.76,
+                nonlinear=0.9,
                 numamplifiers=1,
                 gain=[1.89],
                 ronoise=[3.20],
@@ -272,9 +272,9 @@ class VLTFORS2Chip1Spectrograph(VLTFORS2Spectrograph):
         arcparam['nonlinear_counts'] = self.detector[0]['nonlinear'] * self.detector[0]['saturation']
         if disperser == 'GRIS_1200B':
             arcparam['disp'] = 2.4
-            arcparam['b1'] = 6.88935788e-04
-            arcparam['b2'] = -2.38634231e-08
-            #arcparam['wvmnx'][1] = 6000.
+            #arcparam['b1'] = 6.88935788e-04
+            #arcparam['b2'] = -2.38634231e-08
+            arcparam['wvmnx'][1] = 6000.
             arcparam['wv_cen'] = 4360.
         else:
             msgs.error('Not ready for this disperser {:s}!'.format(disperser))

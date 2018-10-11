@@ -17,7 +17,7 @@ def iterative_fitting(spec, tcent, ifit, IDs, llist, disp, plot_fil=None,
     if aparm is None:
         aparm = dict(llist='',
                     disp=disp,           # Ang/unbinned pixel
-                    match_toler=3.,      # Matcing tolerance (pixels)
+                    match_toler=1.,      # Matcing tolerance (pixels)
                     func='legendre',     # Function for fitting
                     n_first=2,           # Order of polynomial for first fit
                     n_final=4,           # Order of polynomial for final fit

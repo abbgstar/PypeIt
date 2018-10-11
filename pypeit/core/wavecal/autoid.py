@@ -359,7 +359,7 @@ class General:
 
     def __init__(self, spec, lines, ok_mask=None, min_nsig=50.0, nonlinear_counts = 1e10, islinelist=False,
               outroot=None, debug = False, verbose=False,
-              fit_parm=None, lowest_nsig=10., rms_threshold=0.15,
+              fit_parm=None, lowest_nsig=10., rms_threshold=0.5,
               binw=None, bind=None, nstore=1, use_unknowns=True):
 
         # Set some default parameters
@@ -465,10 +465,10 @@ class General:
     def run_brute_loop(self, slit, arrerr=None, wavedata=None):
         # Set the parameter space that gets searched
         rng_poly = [3, 4]            # Range of algorithms to check (only trigons+tetragons are supported)
-        rng_list = range(3, 6)       # Number of lines to search over for the linelist
-        rng_detn = range(3, 6)       # Number of lines to search over for the detected lines
+        rng_list = range(3, 10)       # Number of lines to search over for the linelist
+        rng_detn = range(3, 10)       # Number of lines to search over for the detected lines
         rng_pixt = [1.0]             # Pixel tolerance
-        idthresh = 0.5               # Criteria for early return (at least this fraction of lines must have
+        idthresh = 0.75               # Criteria for early return (at least this fraction of lines must have
                                      # an ID on either side of the spectrum)
 
         best_patt_dict, best_final_fit = None, None
@@ -497,7 +497,7 @@ class General:
                             nrgt = best_final_fit['tcent'].size-nlft
                             if np.sum(best_final_fit['xfit'] < 0.5)/nlft > idthresh and\
                                 np.sum(best_final_fit['xfit'] >= 0.5) / nrgt > idthresh:
-                                # At least half of the lines on either side of the spectrum have been identified
+                                # At least idthresh fraction of the lines on either side of the spectrum have been identified
                                 return best_patt_dict, best_final_fit
 
         return best_patt_dict, best_final_fit
@@ -1158,7 +1158,7 @@ class General:
                 cnt += 1
         return dind, lind, wvcent, wvdisp
 
-    def solve_slit(self, slit, psols, msols, nstore=1, nselw=3, nseld=3):
+    def solve_slit(self, slit, psols, msols, nstore=1, nselw=6, nseld=6):
         """
         Need some docs here. I think this routine creates a 2d histogram of the patterns and searches for the most
         represented wave_cen and log10(disp). Then it attempts to fit each value determined (default of 1) to
@@ -1233,7 +1233,7 @@ class General:
             #plt.imshow((np.abs(sm_histimg[:, ::-1].T)), extent=extent, aspect='auto')
             cimg = ax_image.imshow(this_hist.T, extent=extent, aspect='auto',vmin=-2.0,vmax=5.0,
                        interpolation='nearest',origin='lower',cmap='Set1')
-            nm = histimg.max() - histimg.min()
+            nm = this_hist.max() - this_hist.min()
             ticks = np.arange(this_hist.min(),this_hist.max() + 1,1)
             cbar = fx.colorbar(cimg, ax=ax_image,ticks = ticks,drawedges = True, extend ='both',
                                spacing = 'proporational',orientation ='horizontal')
