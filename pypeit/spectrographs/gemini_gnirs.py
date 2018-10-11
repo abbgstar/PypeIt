@@ -94,6 +94,8 @@ class GeminiGNIRSSpectrograph(spectrograph.Spectrograph):
         def_keys[0]['decker'] = 'SLIT'
         def_keys[0]['dispname'] = 'GRATING'
         def_keys[0]['exptime'] = 'EXPTIME'
+        def_keys[0]['binning'] = 1
+        def_keys[0]['dispname'] = 'INSTR'      # The time stamp of the observation (i.e. decimal MJD)
         return def_keys
 
     def header_keys(self):
