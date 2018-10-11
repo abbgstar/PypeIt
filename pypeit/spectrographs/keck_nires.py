@@ -75,7 +75,8 @@ class KeckNIRESSpectrograph(spectrograph.Spectrograph):
         # Always flux calibrate, starting with default parameters
         par['fluxcalib'] = pypeitpar.FluxCalibrationPar()
         # Do not correct for flexure
-        par['flexure'] = None
+        par['flexure'] = pypeitpar.FlexurePar()
+        par['flexure']['method'] = 'skip'
         # Set the default exposure time ranges for the frame typing
         par['calibrations']['standardframe']['exprng'] = [None, 20]
         par['calibrations']['arcframe']['exprng'] = [20, None]
@@ -127,7 +128,7 @@ class KeckNIRESSpectrograph(spectrograph.Spectrograph):
         hdr_keys[0]['naxis0'] = 'NAXIS2'
         hdr_keys[0]['naxis1'] = 'NAXIS1'
         hdr_keys[0]['binning'] = 1
-        hdr_keys[0]['dispname'] = 'INSTR'      # The time stamp of the observation (i.e. decimal MJD)
+        hdr_keys[0]['dispname'] = 'INSTR'  # Should be 'spec' if in the spectroscopy mode
 
         return hdr_keys
 
