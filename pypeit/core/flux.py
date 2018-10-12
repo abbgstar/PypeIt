@@ -254,7 +254,7 @@ def generate_sensfunc(wave, counts, counts_ivar, airmass, exptime, spectrograph,
 
     # Mask Balmer
     msgs.info(" Masking Balmer")
-    lines_balm = np.array([3836.4, 3969.6, 3890.1, 4102.8, 4102.8, 4341.6, 4862.7, 5407.0,
+    lines_balm = np.array([3836.4, 3890.1, 3969.6, 4102.8, 4341.6, 4862.7, 5407.0,
                            6564.6, 8224.8, 8239.2]) * units.AA
     for line_balm in lines_balm:
         ibalm = np.abs(wave_star - line_balm) <= BALM_MASK_WID * resln
