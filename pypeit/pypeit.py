@@ -844,6 +844,7 @@ class MultiSlit(PypeIt):
                                                      self.spectrograph.telescope['latitude'],
                                                      self.spectrograph.telescope['elevation'],
                                                      self.caliBrate.par['wavelengths']['frame'])
+                    msgs.info("{0:s} velocity correction = {1:.4f} km/s".format(self.caliBrate.par['wavelengths']['frame'], vel))
                 else:
                     msgs.info('There are no objects on detector {0} to perform a '.format(self.det)
                               + '{1} correction'.format(self.caliBrate.par['wavelengths']['frame']))
