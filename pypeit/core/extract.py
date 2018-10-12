@@ -248,8 +248,6 @@ def extract_boxcar(image,trace_in, radius_in, ycen = None):
     return fextract
 
 
-
-
 def extract_optimal(sciimg,ivar, mask, waveimg, skyimg, rn2_img, oprof, box_radius, specobj):
 
     """ Calculate the spatial FWHM from an object profile. Utitlit routine for fit_profile
@@ -437,8 +435,6 @@ def extract_optimal(sciimg,ivar, mask, waveimg, skyimg, rn2_img, oprof, box_radi
     specobj.boxcar['BOX_RADIUS'] = box_radius
 
     return None
-
-
 
 
 def findfwhm(model, sig_x):

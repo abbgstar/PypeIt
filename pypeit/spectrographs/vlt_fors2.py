@@ -35,7 +35,7 @@ class VLTFORS2Spectrograph(spectrograph.Spectrograph):
         """
         par = pypeitpar.PypeItPar()
         # Frame numbers
-        par['calibrations']['standardframe']['number'] = 1
+        par['calibrations']['standardframe']['number'] = 0
         par['calibrations']['biasframe']['number'] = 5
         par['calibrations']['pixelflatframe']['number'] = 5
         par['calibrations']['traceframe']['number'] = 5
@@ -48,8 +48,9 @@ class VLTFORS2Spectrograph(spectrograph.Spectrograph):
         par['scienceimage'] = pypeitpar.ScienceImagePar()
         # Always flux calibrate, starting with default parameters
         par['fluxcalib'] = pypeitpar.FluxCalibrationPar()
-        # Always correct for flexure, starting with default parameters
+        # Skip the flexure correction
         par['flexure'] = pypeitpar.FlexurePar()
+        par['flexure']['method'] = 'skip'
         # Set the default exposure time ranges for the frame typing
         par['calibrations']['biasframe']['exprng'] = [None, 1]
         par['calibrations']['darkframe']['exprng'] = [999999, None]  # No dark frames
@@ -270,7 +271,7 @@ class VLTFORS2Chip1Spectrograph(VLTFORS2Spectrograph):
             arcparam is modified in place
 
         """
-        arcparam['lamps'] = ['CdI', 'HgI', 'HeI', 'NeI']
+        arcparam['lamps'] = ['CdI', 'HgI', 'HeI']
         arcparam['nonlinear_counts'] = self.detector[0]['nonlinear'] * self.detector[0]['saturation']
         if disperser == 'GRIS_1200B':
             arcparam['disp'] = 2.4
