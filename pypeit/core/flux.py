@@ -620,9 +620,13 @@ def extinction_correction(wave, airmass, extinct):
     flux_corr : ndarray
       Flux corrections at the input wavelengths
     """
+    # Make sure that airmass is a floating point number
+    airmass = float(airmass)
+
     # Checks
     if airmass < 1.:
         msgs.error("Bad airmass value in extinction_correction")
+
     # Interpolate
     f_mag_ext = scipy.interpolate.interp1d(extinct['wave'],
                                            extinct['mag_ext'], bounds_error=False, fill_value=0.)
@@ -682,7 +686,12 @@ def find_standard_file(ra, dec, toler=20.*units.arcmin, check=False):
     std_file_fmt = [1]  # 1=Calspec style FITS binary table
 
     # SkyCoord
-    obj_coord = coordinates.SkyCoord(ra, dec, unit=(units.hourangle, units.deg))
+    if ':' in ra or ' ' in ra:
+        # Assume RA is in hour angle
+        obj_coord = coordinates.SkyCoord(ra, dec, unit=(units.hourangle, units.deg))
+    else:
+        # Assume RA is in degrees
+        obj_coord = coordinates.SkyCoord(ra, dec, unit=(units.deg, units.deg))
     # Loop on standard sets
     closest = dict(sep=999 * units.deg)
     for qq, sset in enumerate(std_sets):
@@ -715,6 +724,9 @@ def find_standard_file(ra, dec, toler=20.*units.arcmin, check=False):
                 closest.update(dict(name=star_tbl[int(idx)]['Name'],
                                     ra=star_tbl[int(idx)]['RA_2000'],
                                     dec=star_tbl[int(idx)]['DEC_2000']))
+
+    import pdb
+    pdb.set_trace()
 
     # Standard star not found
     if check:

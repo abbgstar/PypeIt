@@ -58,7 +58,7 @@ class VLTFORS2Spectrograph(spectrograph.Spectrograph):
         par['calibrations']['traceframe']['exprng'] = [0, None]
         par['calibrations']['arcframe']['exprng'] = [None, 100]
         par['calibrations']['standardframe']['exprng'] = [1, 120]
-        par['scienceframe']['exprng'] = [60, None]
+        par['scienceframe']['exprng'] = [1, None]
         return par
 
     def header_keys(self):
@@ -70,7 +70,9 @@ class VLTFORS2Spectrograph(spectrograph.Spectrograph):
         hdr_keys[0] = {}
 
         # The keyword that identifies the frame type (i.e. bias, flat, etc.)
-        hdr_keys[0]['idname']  = 'HIERARCH ESO DPR TYPE'
+        hdr_keys[0]['idname'] = 'HIERARCH ESO DPR TYPE'
+        hdr_keys[0]['idcatg'] = 'HIERARCH ESO DPR CATG'
+
         # Header keyword for the name given by the observer to a given frame
         hdr_keys[0]['target']  = 'OBJECT'
         # The time stamp of the observation (i.e. decimal MJD)
@@ -116,7 +118,7 @@ class VLTFORS2Spectrograph(spectrograph.Spectrograph):
         """
         good_exp = framematch.check_frame_exptime(fitstbl['exptime'], exprng)
         if ftype == 'science':
-            return good_exp & (fitstbl['idname'] == 'SKY')
+            return good_exp & (fitstbl['idname'] == 'SKY') & (fitstbl['idcatg'] == 'SCIENCE')
         if ftype == 'standard':
             return good_exp & (fitstbl['idname'] == 'STD')
         if ftype == 'arc':
