@@ -725,9 +725,6 @@ def find_standard_file(ra, dec, toler=20.*units.arcmin, check=False):
                                     ra=star_tbl[int(idx)]['RA_2000'],
                                     dec=star_tbl[int(idx)]['DEC_2000']))
 
-    import pdb
-    pdb.set_trace()
-
     # Standard star not found
     if check:
         return False
