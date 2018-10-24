@@ -194,6 +194,11 @@ class WaveCalib(masterframe.MasterFrame):
         # Return
         return self.wv_calib
 
+    def _build_wv_echelle(self, wv_calib):
+
+
+
+
     def calibrate_spec(self, slit, method='arclines'):
         """
         TODO: Deprecate this function? It's only being used by the tests
@@ -363,16 +368,19 @@ class WaveCalib(masterframe.MasterFrame):
 
         # Fill up the calibrations and generate QA
         self.wv_calib = self._build_wv_calib(self.par['method'], skip_QA=skip_QA)
+        if self.par['echelle']:
+            retval = self._build_wv_echelle(self.wv_calib)
+
+        # If this is an echelle spectrograph, perform a 2-d wavelength fit of pixel and order number
+
+
+        #
+        #embed()
         self.wv_calib['steps'] = self.steps
         sv_par = self.par.data.copy()
         #sv_par.pop('llist')
         self.wv_calib['par'] = sv_par
-        # If this is an echelle spectrograph, perform a 2-d wavelength fit of pixel and order number
-        #if self.par['echelle']:
-        #    retval = self._build_wv_echelle(self.wv_calib)
-        #nslit = 1 if len(lordloc.shape) == 1 else lordloc.shape[1]
-        #
-        #embed()
+
 
         # Build mask
         self._make_maskslits(lordloc.shape[1])

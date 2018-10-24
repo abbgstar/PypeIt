@@ -91,7 +91,8 @@ def global_skysub(image, ivar, tilts, thismask, slit_left, slit_righ, inmask = N
 
     # Init
     (nspec, nspat) = image.shape
-    piximg = tilts * (nspec-1)
+#    piximg = tilts * (nspec-1)
+    piximg = tilts*nspec
     if inmask is None:
         inmask = np.copy(thismask)
 
@@ -281,7 +282,8 @@ def local_skysub_extract(sciimg, sciivar, tilts, waveimg, global_sky, rn2_img, t
 
     nspat = sciimg.shape[1]
     nspec = sciimg.shape[0]
-    piximg = tilts * (nspec-1)
+#    piximg = tilts * (nspec-1)
+    piximg = tilts*nspec
 
     # Copy the specobjs that will be the output
     nobj = len(sobjs)
