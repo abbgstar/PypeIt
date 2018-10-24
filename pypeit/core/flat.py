@@ -204,7 +204,7 @@ def fit_flat(flat, tilts_dict, thismask_in, slit_left_in, slit_righ_in, inmask =
 
     # Create a tilts image that encompasses the whole image, rather than just the thismask_in slit pixels
     tilts = tracewave.coeff2tilts(tilts_dict['coeffs'], shape, tilts_dict['func2D'], max_tilt=1.2, min_tilt=-0.2)
-    piximg = tilts*nspec
+    piximg = tilts*(nspec-1)
     pixvec = np.arange(nspec)
 
     # Create a fractional position image ximg that encompasses the whole image, rather than just the thismask_in slit pixels
