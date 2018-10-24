@@ -94,16 +94,6 @@ class GeminiGNIRSSpectrograph(spectrograph.Spectrograph):
         """
         Check headers match expectations for an LRISb exposure.
 
-<<<<<<< HEAD
-        def_keys[0]['target'] = 'OBJECT'
-        def_keys[0]['time'] = 'MJD_OBS'
-        def_keys[0]['decker'] = 'SLIT'
-        def_keys[0]['dispname'] = 'GRATING'
-        def_keys[0]['exptime'] = 'EXPTIME'
-        def_keys[0]['binning'] = 1
-        def_keys[0]['dispname'] = 'INSTR'      # The time stamp of the observation (i.e. decimal MJD)
-        return def_keys
-=======
         See also
         :func:`pypeit.spectrographs.spectrograph.Spectrograph.check_headers`.
 
@@ -115,7 +105,6 @@ class GeminiGNIRSSpectrograph(spectrograph.Spectrograph):
                                '1.NAXIS': 2 }
         super(GeminiGNIRSSpectrograph, self).check_headers(headers,
                                                            expected_values=expected_values)
->>>>>>> ae6021c5946ab9525689726841bf60c24562b70d
 
     def header_keys(self):
         """
