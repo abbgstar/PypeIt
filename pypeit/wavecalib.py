@@ -179,7 +179,7 @@ class WaveCalib(masterframe.MasterFrame):
                                      nonlinear_counts = self.par['nonlinear_counts'])
                     final_fit[str(slit)] = ifinal_fit.copy()
             else:
-                # Now preferred
+                # This is the preferred method used in nearly all cases. Other methods are just in here for special debugging cases.
                 arcfitter = autoid.General(self.arccen, par = self.par, ok_mask=ok_mask)
                 patt_dict, final_fit = arcfitter.get_results()
             self.wv_calib = final_fit
@@ -283,6 +283,7 @@ class WaveCalib(masterframe.MasterFrame):
         if 'par' in self.wv_calib.keys():
             self.par = self.wv_calib['par'].copy()
 
+    # Todo: JFH this needs to be replaced by something that modifies the lamps or something which is currently hard coded in the wavelengths parset
     def _load_arcparam(self, calibrate_lamps=None):
         """
         Load the arc parameters
@@ -330,7 +331,7 @@ class WaveCalib(masterframe.MasterFrame):
         self.maskslits = mask
         return self.maskslits
 
-    def run(self, lordloc, rordloc, slitpix, nonlinear=None, skip_QA=False):
+    def run(self, lordloc, rordloc, slitpix, skip_QA=False):
         """
         Main driver for wavelength calibration
 
@@ -348,9 +349,6 @@ class WaveCalib(masterframe.MasterFrame):
           From a TraceSlit object
         slitpix : ndarray
           slitmask from tslits_dict
-        nonlinear : float, optional
-          Would be passed to arc.detect_lines but that routine is
-          currently being run in arclines.holy
         skip_QA : bool, optional
 
         Returns
@@ -363,16 +361,18 @@ class WaveCalib(masterframe.MasterFrame):
         # Extract an arc down each slit
         _, _ = self._extract_arcs(lordloc, rordloc, slitpix)
 
-
-        #if self.arcparam is None:
-        #    _ = self._load_arcparam()
-
         # Fill up the calibrations and generate QA
         self.wv_calib = self._build_wv_calib(self.par['method'], skip_QA=skip_QA)
         self.wv_calib['steps'] = self.steps
         sv_par = self.par.data.copy()
         #sv_par.pop('llist')
         self.wv_calib['par'] = sv_par
+        # If this is an echelle spectrograph, perform a 2-d wavelength fit of pixel and order number
+        #if self.par['echelle']:
+        #    retval = self._build_wv_echelle(self.wv_calib)
+        #nslit = 1 if len(lordloc.shape) == 1 else lordloc.shape[1]
+        #
+        #embed()
 
         # Build mask
         self._make_maskslits(lordloc.shape[1])

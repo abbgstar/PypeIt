@@ -574,8 +574,8 @@ class Calibrations(object):
             return self.wv_calib, self.maskslits
 
         # Setup
-        nonlinear = self.spectrograph.detector[self.det-1]['saturation'] \
-                        * self.spectrograph.detector[self.det-1]['nonlinear']
+        #nonlinear = self.spectrograph.detector[self.det-1]['saturation'] \
+        #                * self.spectrograph.detector[self.det-1]['nonlinear']
 
         # Instantiate
         self.waveCalib = wavecalib.WaveCalib(self.msarc, spectrograph=self.spectrograph,
@@ -591,7 +591,7 @@ class Calibrations(object):
             self.wv_calib, _ = self.waveCalib.run(self.tslits_dict['lcen'],
                                                   self.tslits_dict['rcen'],
                                                   self.tslits_dict['slitpix'],
-                                                  nonlinear=nonlinear, skip_QA=(not self.write_qa))
+                                                  skip_QA=(not self.write_qa))
             # Save to Masters
             if self.save_masters:
                 self.waveCalib.save_master(self.waveCalib.wv_calib)
