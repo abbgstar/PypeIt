@@ -74,7 +74,7 @@ def iterative_fitting(spec, tcent, ifit, IDs, llist, disp,
     n_order = n_first
     flg_quit = False
     #fmin , fmax = -1.0, 1.0
-    fmin, fmax = 0.0, float(npix)
+    fmin, fmax = 0.0, float(npix-1)
     while (n_order <= n_final) and (flg_quit is False):
         # Fit with rejection
         xfit, yfit, wfit = tcent[ifit], all_ids[ifit], weights[ifit]
@@ -138,7 +138,7 @@ def iterative_fitting(spec, tcent, ifit, IDs, llist, disp,
 
     # Pack up fit
     final_fit = dict(fitc=fit, function=func, xfit=xfit, yfit=yfit, weights=wfit,
-                     ions=ions, fmin=fmin, fmax=fmax, xnorm=float(npix),
+                     ions=ions, fmin=fmin, fmax=fmax, xnorm=float(npix-1),
                      xrej=xrej, yrej=yrej, mask=mask, spec=spec, nrej=sigrej_final,
                      shift=0., tcent=tcent, rms=rms_pix)
 
