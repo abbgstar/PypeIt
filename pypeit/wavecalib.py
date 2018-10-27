@@ -195,7 +195,7 @@ class WaveCalib(masterframe.MasterFrame):
         return self.wv_calib
 
     def _build_wv_echelle(self, wv_calib):
-
+        pass
 
 
 
@@ -368,17 +368,12 @@ class WaveCalib(masterframe.MasterFrame):
 
         # Fill up the calibrations and generate QA
         self.wv_calib = self._build_wv_calib(self.par['method'], skip_QA=skip_QA)
-        if self.par['echelle']:
-            retval = self._build_wv_echelle(self.wv_calib)
-
+        # TODO these are the hooks for the 2-d wavelength solution.
         # If this is an echelle spectrograph, perform a 2-d wavelength fit of pixel and order number
-
-
-        #
-        #embed()
+        #if self.par['echelle']:
+        #    retval = self._build_wv_echelle(self.wv_calib)
         self.wv_calib['steps'] = self.steps
         sv_par = self.par.data.copy()
-        #sv_par.pop('llist')
         self.wv_calib['par'] = sv_par
 
 
