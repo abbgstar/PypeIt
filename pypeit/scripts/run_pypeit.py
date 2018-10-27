@@ -100,7 +100,8 @@ def main(args):
         msgs.info('Done checking calibrations.  Exiting..')
         return 0
 
-    # Detector?
+    # JFH TODO This line of code should be removed. We don't allow parsets to be modified by arguments to the script.
+    # Why stop at detector here, user could specify slits, or other parameters and then the code would be a mess.
     if args.detector is not None:
         msgs.info("Restricting reductions to detector={}".format(args.detector))
         pypeIt.par['rdx']['detnum'] = int(args.detector)
