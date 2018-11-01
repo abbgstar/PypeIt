@@ -84,8 +84,8 @@ class WHTISISSpectrograph(spectrograph.Spectrograph):
         par['calibrations']['wavelengths']['method'] = 'arclines'
         # Scienceimage default parameters
         par['scienceimage'] = pypeitpar.ScienceImagePar()
-        # Do not flux calibrate
-        par['fluxcalib'] = None
+        # Always flux calibrate, starting with default parameters
+        par['fluxcalib'] = pypeitpar.FluxCalibrationPar()
         # Always correct for flexure, starting with default parameters
         par['flexure'] = pypeitpar.FlexurePar()
         # Set the default exposure time ranges for the frame typing
