@@ -95,7 +95,6 @@ class WaveCalib(masterframe.MasterFrame):
         self.sci_ID = sci_ID
         self.det = det
         self.setup = setup
-        #self.arcparam = arcparam
 
         # Attributes
         # Done by MasterFrame
@@ -144,7 +143,7 @@ class WaveCalib(masterframe.MasterFrame):
             ArI = waveio.load_line_list('ArI', use_ion=True, NIST=True)
             ArII = waveio.load_line_list('ArII', use_ion=True, NIST=True)
             llist = vstack([CuI, ArI, ArII])
-            self.arcparam['llist'] = llist
+            self.par['llist'] = llist
 
             self.wv_calib = arc.simple_calib_driver(self.msarc, self.par, self.arccen, ok_mask,
                                                     nfitpix=self.par['nfitpix'],
@@ -180,7 +179,7 @@ class WaveCalib(masterframe.MasterFrame):
                     final_fit[str(slit)] = ifinal_fit.copy()
             else:
                 # Now preferred
-                arcfitter = autoid.General(self.arccen, par = self.par, ok_mask=ok_mask)
+                arcfitter = autoid.General(self.arccen, par=self.par, ok_mask=ok_mask)
                 patt_dict, final_fit = arcfitter.get_results()
             self.wv_calib = final_fit
 
@@ -363,9 +362,6 @@ class WaveCalib(masterframe.MasterFrame):
         # Extract an arc down each slit
         _, _ = self._extract_arcs(lordloc, rordloc, slitpix)
 
-
-        #if self.arcparam is None:
-        #    _ = self._load_arcparam()
 
         # Fill up the calibrations and generate QA
         self.wv_calib = self._build_wv_calib(self.par['method'], skip_QA=skip_QA)
