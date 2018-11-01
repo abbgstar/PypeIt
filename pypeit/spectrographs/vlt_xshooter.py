@@ -121,7 +121,6 @@ class VLTXShooterSpectrograph(spectrograph.Spectrograph):
         #
         match_criteria['standard']['match'] = {}
         match_criteria['standard']['match']['binning'] = ''
-        match_criteria['standard']['match']['decker'] = ''
         # Bias
         match_criteria['bias']['match'] = {}
         match_criteria['bias']['match']['binning'] = ''
@@ -167,8 +166,7 @@ class VLTXShooterNIRSpectrograph(VLTXShooterSpectrograph):
                             )]
         self.numhead = 1
 
-    @staticmethod
-    def default_pypeit_par():
+    def default_pypeit_par(self):
         """
         Set default parameters for XSHOOTER NIR reductions.
         """
@@ -181,6 +179,12 @@ class VLTXShooterNIRSpectrograph(VLTXShooterSpectrograph):
         par['calibrations']['slits']['maxshift'] = 0.5
         par['calibrations']['slits']['pcatype'] = 'pixel'
         par['calibrations']['tilts']['tracethresh'] = [10,10,10,10,10,10,10,10,10, 10, 10, 20, 20, 20,20,10]
+
+
+        # 1D wavelength solution
+        par['calibrations']['wavelengths']['lamps'] = ['OH_XSHOOTER']
+        par['calibrations']['wavelengths']['nonlinear_counts'] = self.detector[0]['nonlinear'] * self.detector[0]['saturation']
+
         # Always correct for flexure, starting with default parameters
         par['flexure'] = pypeitpar.FlexurePar()
         par['scienceframe']['process']['sigclip'] = 20.0
@@ -215,6 +219,8 @@ class VLTXShooterNIRSpectrograph(VLTXShooterSpectrograph):
                        disperser=None, **null_kwargs):
         """
         Setup the arc parameters
+
+        TODO: disperser can't be required because it's never used
 
         Args:
             arcparam: dict

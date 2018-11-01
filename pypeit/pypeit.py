@@ -132,7 +132,8 @@ class PypeIt(object):
         msgs.reset(verbosity=2)
 
         # Read master file
-        cfg_lines, data_files, frametype, setups = parse_pypeit_file(self.setup_pypeit_file)
+        cfg_lines, data_files, frametype, usrdata, setups \
+                = parse_pypeit_file(self.setup_pypeit_file)
         sorted_file = os.path.splitext(self.setup_pypeit_file)[0]+'.sorted'
         sub_cfg_lines = cfg_lines[0:2]
 
@@ -225,9 +226,9 @@ class PypeIt(object):
         can_be_None = ['flexure', 'fluxcalib']
         self.par.validate_keys(required=required, can_be_None=can_be_None)
 
+        # Save
         for kk,sci_ID in enumerate(all_sci_ID):
             sci_dict = self.reduce_exposure(sci_ID, reuse_masters=reuse_masters)
-            # Save
             scidx = self.fitstbl.find_frames('science', sci_ID=sci_ID, index=True)[0]
             self.save_exposure(scidx, sci_dict, self.basename)
             basenames[kk] = self.basename
@@ -412,8 +413,10 @@ class PypeIt(object):
             if self.caliBrate.par['wavelengths']['reference'] == 'pixel'
             else self.caliBrate.par['wavelengths']['frame'],
                               vel_correction=vel_corr)
+            # Did the user re-run a single detector?
             save.save_1d_spectra_fits(all_specobjs, self.fitstbl[sidx], outfile,
-                                      helio_dict=helio_dict, telescope=self.spectrograph.telescope)
+                                      helio_dict=helio_dict, telescope=self.spectrograph.telescope,
+                                      update_det=self.par['rdx']['detnum'])
         #        elif save_format == 'hdf5':
         #            debugger.set_trace()  # NEEDS REFACTORING
         #            arsave.save_1d_spectra_hdf5(None)
@@ -429,7 +432,7 @@ class PypeIt(object):
         save.save_2d_images(s_dict, self.fitstbl, sidx, self.spectrograph.primary_hdrext,
                             self.setup, self.caliBrate.master_dir,
                             os.path.join(self.par['rdx']['redux_path'], self.par['rdx']['scidir']),
-                            basename)
+                            basename, update_det=self.par['rdx']['detnum'])
         return all_specobjs
 
     def _extract_one(self):
@@ -860,7 +863,7 @@ class MultiSlit(PypeIt):
             # Set to sciivar. Could create a model but what is the point?
             ivarmodel = np.copy(sciivar)
             # Set to inmask in case on objects were found
-            outmask = sciI.bitmask
+            outmask = sciI.mask
             # empty specobjs object from object finding
             sobjs = sobjs_obj
 
