@@ -12,6 +12,7 @@ from astropy.io import fits
 from astropy.table import Table
 
 from linetools.spectra.xspectrum1d import XSpectrum1D
+from linetools.spectra.utils import collate
 
 from pypeit import msgs
 from pypeit import specobjs

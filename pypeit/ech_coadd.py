@@ -18,7 +18,8 @@ def spec_from_array(wave,flux,sig,**kwargs):
     """
     return spectrum from arrays of wave, flux and sigma
     """
-
+    #goodwave = wave>0.
+    #wave, flux, sig = wave[goodwave],flux[goodwave],sig[goodwave]
     ituple = (wave, flux, sig)
     spectrum = XSpectrum1D.from_tuple(ituple, **kwargs)
     # Polish a bit -- Deal with NAN, inf, and *very* large values that will exceed
@@ -124,7 +125,7 @@ def ech_coadd(files,objids=None,extract='OPT',flux=True,giantcoadd=False,
         kwargs['echelle'] = True
         kwargs['wave_grid_min'] = np.min(wave_grid)
         kwargs['wave_grid_max'] = np.max(wave_grid)
-        spec1d = coadd.coadd_spectra(spectra_coadd, wave_grid_method=wave_grid_method, niter=niter,
+        spec1d = coadd.coadd_spectra(spectra_coadd[1:], wave_grid_method=wave_grid_method, niter=niter,
                                           scale_method=scale_method, do_offset=do_offset, sigrej_final=sigrej_final,
                                           do_var_corr=do_var_corr, qafile=qafile, outfile=outfile,
                                           do_cr=do_cr, debug=debug, **kwargs)
