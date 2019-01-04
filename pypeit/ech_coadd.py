@@ -78,6 +78,7 @@ def ech_coadd(files,objids=None,extract='OPT',flux=True,giantcoadd=False,
 
     if giantcoadd:
         msgs.info('Coadding all orders and exposures at once')
+        #spectra = load.load_1dspec(fname, exten=None, extract=extract, objname=objids, flux=flux)
         spectra = load.ech_load_spec(files, objid=objids,order=None, extract=extract, flux=flux)
         wave_grid = np.zeros((2,spectra.nspec))
         for i in range(spectra.nspec):
@@ -101,6 +102,7 @@ def ech_coadd(files,objids=None,extract='OPT',flux=True,giantcoadd=False,
         rsp_kwargs['sig_tag'] = '{:s}_FLAM_SIG'.format(extract)
         wave_grid = np.zeros((2,norder))
         for iord in range(norder):
+            #spectra = load.load_spec_order(files, objid=objids, order=iord, extract=extract, flux=flux)
             spectra = load.ech_load_spec(files, objid=objids, order=iord, extract=extract, flux=flux)
             ech_kwargs = {'echelle': False, 'wave_grid_min': spectra.wvmin.value, 'wave_grid_max': spectra.wvmax.value, 'v_pix': v_pix}
             wave_grid[0,iord] = spectra.wvmin.value
