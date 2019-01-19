@@ -217,7 +217,7 @@ class PypeIt(object):
             grp_standards = frame_indx[is_standard & in_grp]
 
             # Reduce all the standard frames, loop on unique comb_id
-            u_combid_std= np.unique(self.fitstbl['comb_id'][grp_standards])
+            u_combid_std= np.unique(self.fitstbl['comb_id'].data[grp_standards])
             for j, comb_id in enumerate(u_combid_std):
                 frames = np.where(self.fitstbl['comb_id'] == comb_id)[0]
                 bg_frames = np.where(self.fitstbl['bkg_id'] == comb_id)[0]
@@ -340,7 +340,8 @@ class PypeIt(object):
             sci_dict[self.det]['sciimg'], sci_dict[self.det]['sciivar'], sci_dict[self.det]['skymodel'], \
                 sci_dict[self.det]['objmodel'], sci_dict[self.det]['ivarmodel'], sci_dict[self.det]['outmask'], \
                 sci_dict[self.det]['specobjs'], vel_corr \
-                    = self.extract_one(self.frames, self.det, bg_frames = self.bg_frames, std_outfile = std_outfile)
+                    = self.extract_one(self.frames, self.det, bg_frames=self.bg_frames,
+                                       std_outfile=std_outfile)
             if vel_corr is not None:
                 sci_dict['meta']['vel_corr'] = vel_corr
 
@@ -434,6 +435,36 @@ class PypeIt(object):
 
         return std_trace
 
+    def prep_extract(self, frames, det, bg_frames=[]):
+        """
+        For ease of scripting, e.g. in Notebook
+
+        Args:
+            frames:
+            det:
+            bg_frames:
+
+        Returns:
+
+        """
+        # Grab some meta-data needed for the reduction from the fitstbl
+        self.objtype, self.setup, self.obstime, self.basename, self.binning = self.get_sci_metadata(frames[0], det)
+        # Is this an IR reduction
+        self.ir_redux = True if len(bg_frames) > 0 else False
+        # Is this a standard star?
+        self.std_redux = 'standard' in self.objtype
+        # Instantiate ScienceImage for the files we will reduce
+        self.sciI = scienceimage.ScienceImage(self.caliBrate.tslits_dict, self.spectrograph,
+                                              self.fitstbl.frame_paths(frames),
+                                              bg_file_list=self.fitstbl.frame_paths(bg_frames),
+                                              ir_redux = self.ir_redux,
+                                              par=self.par['scienceimage'],
+                                              frame_par=self.par['scienceframe'],
+                                              objtype=self.objtype,
+                                              det=det,
+                                              binning=self.binning,
+                                              setup=self.setup)
+
     def extract_one(self, frames, det, bg_frames=[], std_outfile=None):
         """
         Extract a single exposure/detector pair
@@ -451,25 +482,9 @@ class PypeIt(object):
             vel_corr
 
         """
-        # Grab some meta-data needed for the reduction from the fitstbl
-        self.objtype, self.setup, self.obstime, self.basename, self.binning = self.get_sci_metadata(frames[0], det)
-        # Is this an IR reduction
-        self.ir_redux = True if len(bg_frames) > 0 else False
-        # Is this a standard star?
-        self.std_redux = 'standard' in self.objtype
-        # Get the standard trace if need be
-        std_trace = self.get_std_trace(self.std_redux, det, std_outfile)
-        # Instantiate ScienceImage for the files we will reduce
-        self.sciI = scienceimage.ScienceImage(self.caliBrate.tslits_dict, self.spectrograph,
-                                              self.fitstbl.frame_paths(frames),
-                                              bg_file_list=self.fitstbl.frame_paths(bg_frames),
-                                              ir_redux = self.ir_redux,
-                                              par=self.par['scienceimage'],
-                                              frame_par=self.par['scienceframe'],
-                                              objtype=self.objtype,
-                                              det=det,
-                                              binning=self.binning,
-                                              setup=self.setup)
+        # Prep
+        self.prep_extract(frames, det, bg_frames=bg_frames)
+
         # For QA on crash
         msgs.sciexp = self.sciI
 
@@ -481,6 +496,7 @@ class PypeIt(object):
         # Object finding, first pass on frame without sky subtraction
         self.maskslits = self.caliBrate.maskslits.copy()
         # Do one iteration of object finding, and sky subtract to get initial sky model
+        std_trace = self.get_std_trace(self.std_redux, det, std_outfile)
         self.sobjs_obj, self.nobj, skymask_init = \
             self.find_objects(self.sciimg, std=self.std_redux, ir_redux=self.ir_redux,
                               std_trace=std_trace, snr_trim=False,maskslits=self.maskslits,
@@ -526,14 +542,14 @@ class PypeIt(object):
                 msgs_string += '{0:s}'.format(self.fitstbl['filename'][iframe]) + msgs.newline()
             msgs.warn(msgs_string)
             # set to first pass global sky
-            skymodel = self.initial_sky
-            objmodel = np.zeros_like(self.sciimg)
+            self.skymodel = self.initial_sky
+            self.objmodel = np.zeros_like(self.sciimg)
             # Set to sciivar. Could create a model but what is the point?
-            ivarmodel = np.copy(self.sciivar)
+            self.ivarmodel = np.copy(self.sciivar)
             # Set to inmask in case on objects were found
-            outmask = self.mask
+            self.outmask = self.mask
             # empty specobjs object from object finding
-            sobjs = self.sobjs_obj
+            self.sobjs = self.sobjs_obj
             vel_corr = None
 
         return self.sciimg, self.sciivar, self.skymodel, self.objmodel, self.ivarmodel, self.outmask, self.sobjs, vel_corr

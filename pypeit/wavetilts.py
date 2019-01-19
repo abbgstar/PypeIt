@@ -428,7 +428,7 @@ class WaveTilts(masterframe.MasterFrame):
         viewer, ch = ginga.show_image(self.arcimg*(self.slitmask == slit), chname='Tilts')
         ginga.show_tilts(
             viewer, ch, self.trace_dict, sedges=(self.tslits_dict['lcen'][:,slit],self.tslits_dict['rcen'][:,slit]),
-            points = True, clear_canvas=True)
+            points=True, clear_canvas=True)
 
         # TODO Need to update the show function!
 
