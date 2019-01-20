@@ -424,7 +424,6 @@ class WaveTilts(masterframe.MasterFrame):
         display : str (optional)
           'ginga' -- Display to an RC Ginga
         """
-
         viewer, ch = ginga.show_image(self.arcimg*(self.slitmask == slit), chname='Tilts')
         ginga.show_tilts(
             viewer, ch, self.trace_dict, sedges=(self.tslits_dict['lcen'][:,slit],self.tslits_dict['rcen'][:,slit]),

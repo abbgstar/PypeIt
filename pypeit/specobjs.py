@@ -226,8 +226,6 @@ class SpecObj(object):
         else:
             return False
 
-    # TODO JFH This implementation is buggy. It appears that not all attributes are being copied correctly. I would try
-    # to fix, but I think this entire class is a piece of shit and should be replaced by something working around astropy tables.
     def copy(self):
         sobj_copy = SpecObj(self.shape, self.slit_spat_pos, self.slit_spec_pos) # Instantiate
 #        sobj_copy.__dict__ = self.__dict__.copy() # Copy over all attributes
@@ -252,13 +250,6 @@ class SpecObj(object):
         """
         # Check
         return getattr(self, key)
-
-    # Printing
-#    def __repr__(self):
-#        # Generate sets string
-#        sdet = parse.get_dnum(self.det, prefix=False)
-#        return ('<SpecObj: Setup = {:}, Slit = {:} at spec = {:7.2f} & spat = ({:7.2f},{:7.2f}) on det={:s}, scidx={:}, objid = {:} and objtype={:s}>'.format(
-#            self.config, self.slitid, self.slit_spec_pos, self.slit_spat_pos[0], self.slit_spat_pos[1], sdet, self.scidx, self.objid, self.objtype))
 
     def __repr__(self):
         # Create a single summary table for one object, so that the representation is always the same

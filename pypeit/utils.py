@@ -379,7 +379,7 @@ def bspline_fit(x,y,order=3,knots=None,everyn=20,xmin=None,xmax=None,w=None,bksp
 #ToDo I would prefer to remove the kwargs_bspline and
 # and make them explicit
 def bspline_profile(xdata, ydata, invvar, profile_basis, inmask = None, upper=5, lower=5,
-                    maxiter=25, nord = 4, bkpt=None, fullbkpt=None,
+                    maxiter=25, nord = 4, bkpt=None, fullbkpt=None, verbose=True,
                     relative=None, kwargs_bspline={}, kwargs_reject={}):
     """
     Create a B-spline in the least squares sense with rejection, using a model profile
@@ -465,9 +465,10 @@ def bspline_profile(xdata, ydata, invvar, profile_basis, inmask = None, upper=5,
         inmask = (invvar > 0)
 
     nin = np.sum(inmask)
-    msgs.info("Fitting npoly =" + "{:3d}".format(npoly) + " profile basis functions, nin=" + "{:3d}".format(nin) + " good pixels")
-    msgs.info("******************************  Iter  Chi^2  # rejected  Rel. fact   ******************************")
-    msgs.info("                              ----  -----  ----------  --------- ")
+    if verbose:
+        msgs.info("Fitting npoly =" + "{:3d}".format(npoly) + " profile basis functions, nin=" + "{:3d}".format(nin) + " good pixels")
+        msgs.info("******************************  Iter  Chi^2  # rejected  Rel. fact   ******************************")
+        msgs.info("                              ----  -----  ----------  --------- ")
 
 
     maskwork = outmask & inmask & (invvar > 0)
@@ -478,7 +479,8 @@ def bspline_profile(xdata, ydata, invvar, profile_basis, inmask = None, upper=5,
         sset = pydl.bspline(xdata[maskwork], nord=nord, npoly=npoly, bkpt=bkpt, fullbkpt=fullbkpt,
                        funcname='Bspline longslit special', **kwargs_bspline)
         if maskwork.sum() < sset.nord:
-            msgs.warn('Number of good data points fewer than nord.')
+            if verbose:
+                msgs.warn('Number of good data points fewer than nord.')
             return sset, outmask, yfit, reduced_chi
 
     # This was checked in detail against IDL for identical inputs
@@ -544,11 +546,13 @@ def bspline_profile(xdata, ydata, invvar, profile_basis, inmask = None, upper=5,
                                          upper=upper*relative_factor,
                                          lower=lower*relative_factor, **kwargs_reject)
             tempin = np.copy(maskwork)
-            msgs.info("                             {:4d}".format(iiter) + "{:8.3f}".format(reduced_chi) +
+            if verbose:
+                msgs.info("                             {:4d}".format(iiter) + "{:8.3f}".format(reduced_chi) +
                       "  {:7d}".format((maskwork == 0).sum()) + "      {:6.2f}".format(relative_factor))
 
         else:
-            msgs.info("                             {:4d}".format(iiter) + "    ---    ---    ---    ---")
+            if verbose:
+                msgs.info("                             {:4d}".format(iiter) + "    ---    ---    ---    ---")
 
     if iiter == (maxiter + 1):
         exit_status = 1

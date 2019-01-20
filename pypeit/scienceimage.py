@@ -333,7 +333,7 @@ class ScienceImage(processimages.ProcessImages):
 
 
     def global_skysub(self, tilts, std=False, skymask=None, update_crmask=True, maskslits=None, show_fit=False,
-                      show=False, show_objs=False):
+                      show=False, show_objs=False, verbose=True):
         """
         Perform global sky subtraction, slit by slit
 
@@ -382,7 +382,7 @@ class ScienceImage(processimages.ProcessImages):
                                                              self.tilts, thismask,
                                                              self.tslits_dict['lcen'][:,slit],
                                                              self.tslits_dict['rcen'][:,slit],
-                                                             inmask=inmask,
+                                                             inmask=inmask, verbose=verbose,
                                                              sigrej=sigrej,
                                                              bsp=self.par['bspline_spacing'],
                                                              no_poly=self.par['no_poly'],
@@ -431,7 +431,7 @@ class ScienceImage(processimages.ProcessImages):
     # JFH TODO Should we reduce the number of iterations for standards or near-IR redux where the noise model is not
     # being updated?
     def local_skysub_extract(self, sobjs, waveimg, maskslits=None, model_noise=True, std = False,
-                             show_profile=False, show_resids=False, show=False):
+                             show_profile=False, show_resids=False, show=False, verbose=True):
         """
         Perform local sky subtraction, profile fitting, and optimal extraction slit by slit
 
@@ -502,7 +502,7 @@ class ScienceImage(processimages.ProcessImages):
                                                       std = std, bsp=self.par['bspline_spacing'],
                                                       sn_gauss=self.par['sn_gauss'],
                                                       inmask=inmask, show_profile=show_profile,
-                                                      show_resids=show_resids)
+                                                      show_resids=show_resids, verbose=verbose)
 
         # Set the bit for pixels which were masked by the extraction.
         # For extractmask, True = Good, False = Bad

@@ -22,7 +22,8 @@ import scipy
 
 
 def global_skysub(image, ivar, tilts, thismask, slit_left, slit_righ, inmask = None, bsp=0.6, sigrej=3.0, maxiter=35,
-                  trim_edg=(3,3), pos_mask=True, show_fit=False, no_poly=False, npoly=None):
+                  trim_edg=(3,3), pos_mask=True, show_fit=False, no_poly=False, npoly=None,
+                  verbose=True):
     """
     Perform global sky subtraction on an input slit
 
@@ -161,7 +162,7 @@ def global_skysub(image, ivar, tilts, thismask, slit_left, slit_righ, inmask = N
     # Perform the full fit now
     skyset, outmask, yfit, _, exit_status = utils.bspline_profile(pix, sky, sky_ivar,poly_basis,inmask = inmask_fit,
                                                                   nord=4,upper=sigrej, lower=sigrej,
-                                                                  maxiter=maxiter,
+                                                                  maxiter=maxiter, verbose=verbose,
                                                                   kwargs_bspline = {'bkspace':bsp},
                                                                   kwargs_reject={'groupbadpix':True, 'maxrej': 10})
     # TODO JFH This is a hack for now to deal with bad fits for which iterations do not converge. This is related
@@ -176,7 +177,7 @@ def global_skysub(image, ivar, tilts, thismask, slit_left, slit_righ, inmask = N
         # Perform the full fit now
         skyset, outmask, yfit, _, exit_status = utils.bspline_profile(pix, sky, sky_ivar, poly_basis, inmask=inmask_fit,
                                                                       nord=4, upper=sigrej, lower=sigrej,
-                                                                      maxiter=maxiter,
+                                                                      maxiter=maxiter, verbose=verbose,
                                                                       kwargs_bspline={'bkspace': bsp},
                                                                       kwargs_reject={'groupbadpix': False, 'maxrej': 10})
 
@@ -451,7 +452,7 @@ def optimal_bkpts(bkpts_optimal, bsp_min, piximg, sampmask, samp_frac=0.80,
 def local_skysub_extract(sciimg, sciivar, tilts, waveimg, global_sky, rn2_img, thismask, slit_left, slit_righ, sobjs,
                          bsp = 0.6, inmask = None, extract_maskwidth = 4.0, trim_edg = (3,3), std = False, prof_nsigma = None,
                          niter=4, box_rad = 7, sigrej = 3.5, bkpts_optimal=True, sn_gauss = 4.0, model_noise = True,
-                         debug_bkpts = False, show_profile=False, show_resids=False):
+                         debug_bkpts = False, show_profile=False, show_resids=False, verbose=True):
 
     """Perform local sky subtraction and  extraction
 
@@ -595,7 +596,8 @@ def local_skysub_extract(sciimg, sciivar, tilts, waveimg, global_sky, rn2_img, t
         obj_profiles = np.zeros((nspec, nspat, objwork), dtype=float)
         sigrej_eff = sigrej
         for iiter in range(1, niter + 1):
-            msgs.info('--------------------------REDUCING: Iteration # ' + '{:2d}'.format(iiter) + ' of ' +
+            if verbose:
+                msgs.info('--------------------------REDUCING: Iteration # ' + '{:2d}'.format(iiter) + ' of ' +
                       '{:2d}'.format(niter) + '---------------------------------------------------')
             img_minsky = sciimg - skyimage
             for ii in range(objwork):
@@ -603,10 +605,11 @@ def local_skysub_extract(sciimg, sciivar, tilts, waveimg, global_sky, rn2_img, t
                 if iiter == 1:
                     # If this is the first iteration, print status message. Initiate profile fitting with a simple
                     # boxcar extraction.
-                    msgs.info("----------------------------------- PROFILE FITTING --------------------------------------------------------")
-                    msgs.info("Fitting profile for obj # " + "{:}".format(sobjs[iobj].objid) + " of {:}".format(nobj))
-                    msgs.info("At x = {:5.2f}".format(sobjs[iobj].spat_pixpos) + " on slit # {:}".format(sobjs[iobj].slitid))
-                    msgs.info("------------------------------------------------------------------------------------------------------------")
+                    if verbose:
+                        msgs.info("----------------------------------- PROFILE FITTING --------------------------------------------------------")
+                        msgs.info("Fitting profile for obj # " + "{:}".format(sobjs[iobj].objid) + " of {:}".format(nobj))
+                        msgs.info("At x = {:5.2f}".format(sobjs[iobj].spat_pixpos) + " on slit # {:}".format(sobjs[iobj].slitid))
+                        msgs.info("------------------------------------------------------------------------------------------------------------")
                     flux = extract.extract_boxcar(img_minsky * outmask, sobjs[iobj].trace_spat, box_rad,
                                           ycen=sobjs[iobj].trace_spec)
                     mvarimg = 1.0 / (modelivar + (modelivar == 0))
@@ -721,16 +724,17 @@ def local_skysub_extract(sciimg, sciivar, tilts, waveimg, global_sky, rn2_img, t
                     sigrej_eff = np.fmax(np.sqrt(chi2_sigrej), sigrej)
                     #  Maximum sigrej is sigrej_ceil (unless this is a standard)
                     sigrej_eff = np.fmin(sigrej_eff, sigrej_ceil)
-                    msgs.info('Measured effective rejection from distribution of chi^2')
-                    msgs.info('Instead of rejecting sigrej = {:5.2f}'.format(sigrej) +
+                    if verbose:
+                        msgs.info('Measured effective rejection from distribution of chi^2')
+                        msgs.info('Instead of rejecting sigrej = {:5.2f}'.format(sigrej) +
                               ', use threshold sigrej_eff = {:5.2f}'.format(sigrej_eff))
                     # Explicitly mask > sigrej outliers using the distribution of chi2 but only in the region that was actually fit.
                     # This prevents e.g. excessive masking of slit edges
                     outmask.flat[isub[igood1]] = outmask.flat[isub[igood1]] & (chi2[igood1] < chi2_sigrej) & (
                                 sciivar.flat[isub[igood1]] > 0.0)
                     nrej = outmask.flat[isub[igood1]].sum()
-                    msgs.info(
-                        'Iteration = {:d}'.format(iiter) + ', rejected {:d}'.format(nrej) + ' of ' + '{:d}'.format(
+                    if verbose:
+                        msgs.info('Iteration = {:d}'.format(iiter) + ', rejected {:d}'.format(nrej) + ' of ' + '{:d}'.format(
                             igood1.sum()) + 'fit pixels')
 
             else:
@@ -744,7 +748,8 @@ def local_skysub_extract(sciimg, sciivar, tilts, waveimg, global_sky, rn2_img, t
         # loop over the objwork objects in this grouping and perform the final extractions.
         for ii in range(objwork):
             iobj = group[ii]
-            msgs.info('Extracting obj # {:d}'.format(iobj + 1) + ' of {:d}'.format(nobj) +
+            if verbose:
+                msgs.info('Extracting obj # {:d}'.format(iobj + 1) + ' of {:d}'.format(nobj) +
                       ' with objid = {:d}'.format(sobjs[iobj].objid) + ' on slit # {:d}'.format(sobjs[iobj].slitid) +
                       ' at x = {:5.2f}'.format(sobjs[iobj].spat_pixpos))
             this_profile = obj_profiles[:, :, ii]
