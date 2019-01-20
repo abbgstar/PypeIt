@@ -158,7 +158,6 @@ def global_skysub(image, ivar, tilts, thismask, slit_left, slit_righ, inmask = N
     #                                                   fullbkpt=full_bspline.breakpoints,upper=sigrej, lower=sigrej,
     #                                                   kwargs_reject={'groupbadpix':True, 'maxrej': 10})
 
-
     # Perform the full fit now
     skyset, outmask, yfit, _, exit_status = utils.bspline_profile(pix, sky, sky_ivar,poly_basis,inmask = inmask_fit,
                                                                   nord=4,upper=sigrej, lower=sigrej,
