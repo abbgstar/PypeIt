@@ -75,7 +75,7 @@ def median_echelle_scale(spectra, smask, sn2, nsig=3.0, niter=5, SN_MIN_MEDSCALE
         sn_iord_scale = fluxes[iord - 1] * (1. / sigs[iord - 1])
         allok = (sigs[iord - 1, :] > 0) & (sigs[iord, :] > 0) & (sn_iord_iref > SN_MIN_MEDSCALE) & (
         sn_iord_scale > SN_MIN_MEDSCALE)
-        if sum(allok) > np.maximum(50., len(wave) * overlapfrac):
+        if sum(allok) > np.maximum(10., len(wave) * overlapfrac):
             # Ratio
             med_flux = spectra.data['flux'][iord, allok] / spectra.data['flux'][iord - 1, allok]
             # Clip
@@ -206,7 +206,7 @@ def ech_coadd(files,objids=None,extract='OPT',flux=True,giantcoadd=False,
         sn2, weights = coadd.sn_weight(fluxes, sigs, wave, rmask)
         ## ToDo pasing parameters
         SN_MIN_MEDSCALE = 0.5
-        overlapfrac=0.03
+        overlapfrac=0.01
         median_echelle_scale(spectra_coadd_rebin, rmask, sn2, nsig=sigrej_final, niter=niter,
                              SN_MIN_MEDSCALE=SN_MIN_MEDSCALE, overlapfrac=overlapfrac, debug=debug)
 
