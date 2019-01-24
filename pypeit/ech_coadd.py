@@ -186,7 +186,7 @@ def ech_coadd(files,objids=None,extract='OPT',flux=True,giantcoadd=False,
         # Join into one XSpectrum1D object
         spectra_coadd = collate(spectra_list)
 
-        ## merger orders
+        ## merge orders
         # Final wavelength array
         kwargs['wave_grid_min'] = np.min(spectra_coadd.data['wave'][spectra_coadd.data['wave']>0])
         kwargs['wave_grid_max'] = np.max(spectra_coadd.data['wave'][spectra_coadd.data['wave']>0])
@@ -210,7 +210,7 @@ def ech_coadd(files,objids=None,extract='OPT',flux=True,giantcoadd=False,
         median_echelle_scale(spectra_coadd_rebin, rmask, sn2, nsig=sigrej_final, niter=niter,
                              SN_MIN_MEDSCALE=SN_MIN_MEDSCALE, overlapfrac=overlapfrac, debug=debug)
 
-        ## Mergering orders
+        ## Merging orders
         ## ToDo: Joe claimed not to use pixel depedent weighting.
         weights = 1.0 / sigs**2
         weights[~np.isfinite(weights)] = 0.0
