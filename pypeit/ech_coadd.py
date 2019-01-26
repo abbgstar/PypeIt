@@ -81,6 +81,9 @@ def median_echelle_scale(spectra, smask, sn2, nsig=3.0, niter=5, SN_MIN_MEDSCALE
             # Clip
             mn_scale, med_scale, std_scale = stats.sigma_clipped_stats(med_flux, sigma=nsig, iters=niter)
             med_scale = np.minimum(med_scale, 5.0)
+            ## testing
+            #if iord == 4:
+            #    med_scale = 1.0
             spectra.data['flux'][iord - 1, :] *= med_scale
             spectra.data['sig'][iord - 1, :] *= med_scale
             msgs.info('Scaled %s order by a factor of %s'%(iord,str(med_scale)))
