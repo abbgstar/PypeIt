@@ -444,7 +444,7 @@ def optimal_bkpts(bkpts_optimal, bsp_min, piximg, sampmask, samp_frac=0.80,
 def local_skysub_extract(sciimg, sciivar, tilts, waveimg, global_sky, rn2_img, thismask, slit_left, slit_righ, sobjs,
                          bsp = 0.6, inmask = None, extract_maskwidth = 4.0, trim_edg = (3,3), std = False, prof_nsigma = None,
                          niter=4, box_rad = 7, sigrej = 3.5, bkpts_optimal=True, sn_gauss = 4.0,
-                         model_full_slit=False, model_noise = True,
+                         model_full_slit=False, model_noise = True, verbose=True,
                          debug_bkpts = False, show_profile=False, show_resids=False):
 
     """Perform local sky subtraction and  extraction

@@ -458,6 +458,10 @@ class PypeIt(object):
         self.sciI = scienceimage.ScienceImage(self.spectrograph, self.fitstbl.frame_paths(frames),
                                               bg_file_list=self.fitstbl.frame_paths(bg_frames),
                                               ir_redux = self.ir_redux,
+                                              par=self.par['scienceframe'],
+                                              det=det,
+                                              binning=self.binning)
+
     def extract_one(self, frames, det, bg_frames=[], std_outfile=None):
         """
         Extract a single exposure/detector pair
