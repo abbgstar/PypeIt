@@ -113,6 +113,7 @@ def load_coadd2d_stacks(spec2d_files):
     nfiles = len(spec2d_files)
 
     specobjs_list = []
+    # TODO Sort this out with the correct detector extensions etc.
     # Read in the image stacks
     for ifile in range(nfiles):
         hdu_wave = fits.open(waveimgfiles[ifile])
@@ -346,7 +347,10 @@ def coadd2d(trace_stack, sciimg_stack, sciivar_stack, skymodel_stack, inmask_sta
     sciimg, imgminsky, tilts, waveimg, dspat = sci_list_out
     sciivar = utils.calc_ivar(var_list_out[0])
 
+    wave_mid = ((wave_bins + np.roll(wave_bins,1))/2.0)[1:]
+    dspat_mid = ((dspat_bins + np.roll(dspat_bins,1))/2.0)[1:]
     coadd_dict = dict(wave_bins=wave_bins, dspat_bins=dspat_bins,
+                      wave_mid = wave_mid, dspat_mid=dspat_mid,
                       sciimg=sciimg, sciivar=sciivar, imgminsky=imgminsky, outmask=outmask,
                       nused=nused, tilts=tilts, waveimg=waveimg, dspat=dspat,
                       nspec=imgminsky.shape[0], nspat=imgminsky.shape[1])
