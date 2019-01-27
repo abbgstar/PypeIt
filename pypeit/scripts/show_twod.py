@@ -18,6 +18,7 @@ from astropy.table import Table
 from pypeit import ginga
 from pypeit.spectrographs import util
 from pypeit.processimages import ProcessImagesBitMask as bitmask
+from pypeit.core import pixels
 
 def parser(options=None):
 
@@ -118,6 +119,10 @@ def main(args):
     objmodel = hdu[exten].data
     # Get waveimg
     mdir = head0['PYPMFDIR']+'/'
+    if not os.path.exists(mdir):
+        mdir_base = os.path.basename(os.path.dirname(mdir)) + '/'
+        msgs.warn('Master file dir: {:s}'.format(mdir) + ' does not exist. Using ./{:s}'.format(mdir_base))
+        mdir=mdir_base
     waveimg = masterframe.master_name('wave', head0['ARCMKEY'], mdir)
     # Load Tslits
     # THIS WILL BREAK WHEN PYPCALIB varies from calib type to calib type
@@ -125,10 +130,10 @@ def main(args):
     trc_file = masterframe.master_name('trace', master_key, mdir)
     tslits_dict = traceslits.load_tslits_dict(trc_file)
     spectrograph = util.load_spectrograph(tslits_dict['spectrograph'])
-    slitmask = spectrograph.slitmask(tslits_dict)
+    slitmask = pixels.tslits2mask(tslits_dict)
     shape = (tslits_dict['nspec'], tslits_dict['nspat'])
-    slit_ids = [trace_slits.get_slitid(shape, tslits_dict['lcen'], tslits_dict['rcen'], ii)[0]
-                for ii in range(tslits_dict['lcen'].shape[1])]
+    slit_ids = [trace_slits.get_slitid(shape, tslits_dict['slit_left'], tslits_dict['slit_righ'], ii)[0]
+                for ii in range(tslits_dict['slit_left'].shape[1])]
     # Show the bitmask?
     if args.showmask:
         mask_in = mask
@@ -167,7 +172,7 @@ def main(args):
                                   bitmask=mask_in) #, cuts=(cut_min, cut_max),wcs_match=True)
                                   # JFH For some reason Ginga crashes when I try to put cuts in here.
     show_trace(hdulist_1d, det_nm, viewer, ch)
-    ginga.show_slits(viewer, ch, tslits_dict['lcen'], tslits_dict['rcen'], slit_ids)#, args.det)
+    ginga.show_slits(viewer, ch, tslits_dict['slit_left'], tslits_dict['slit_righ'], slit_ids)#, args.det)
 
     # SKRESIDS
     chname_skyresids = 'sky_resid-det{:s}'.format(sdet)
@@ -175,7 +180,7 @@ def main(args):
     viewer, ch = ginga.show_image(image, chname_skyresids, waveimg=waveimg,
                                   cuts=(-5.0, 5.0), bitmask = mask_in) #,wcs_match=True)
     show_trace(hdulist_1d, det_nm, viewer, ch)
-    ginga.show_slits(viewer, ch, tslits_dict['lcen'], tslits_dict['rcen'], slit_ids)#, args.det)
+    ginga.show_slits(viewer, ch, tslits_dict['slit_left'], tslits_dict['slit_righ'], slit_ids)#, args.det)
 
     # RESIDS
     chname_resids = 'resid-det{:s}'.format(sdet)
@@ -183,7 +188,7 @@ def main(args):
     viewer, ch = ginga.show_image(image, chname=chname_resids, waveimg=waveimg,
                                   cuts = (-5.0, 5.0), bitmask = mask_in) #,wcs_match=True)
     show_trace(hdulist_1d, det_nm, viewer, ch)
-    ginga.show_slits(viewer, ch, tslits_dict['lcen'], tslits_dict['rcen'], slit_ids)#, args.det)
+    ginga.show_slits(viewer, ch, tslits_dict['slit_left'], tslits_dict['slit_righ'], slit_ids)#, args.det)
 
 
     # After displaying all the images sync up the images with WCS_MATCH

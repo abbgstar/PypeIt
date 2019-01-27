@@ -14,38 +14,11 @@ from pypeit import processimages
 from pypeit import specobjs
 from pypeit import utils
 from pypeit import ginga
-from pypeit.core import skysub
-from pypeit.core import extract
-from pypeit.core import trace_slits
+from pypeit.core import skysub, extract, trace_slits, pixels, coadd2d
 from pypeit.par import pypeitpar
-from pypeit.core import procimg
+from matplotlib import pyplot as plt
 
 from pypeit import debugger
-
-#
-# from pypeit.bitmask import BitMask
-#
-#
-# class ScienceImageBitMask(BitMask):
-#     """
-#     Define a bitmask used to set the reasons why each pixel in a science
-#     image was masked.
-#     """
-#     def __init__(self):
-#         # TODO:
-#         #   - Can IVAR0 and IVAR_NAN be consolidated into a single bit?
-#         #   - Is EXTRACT ever set?
-#         mask = {       'BPM': 'Component of the instrument-specific bad pixel mask',
-#                         'CR': 'Cosmic ray detected',
-#                 'SATURATION': 'Saturated pixel',
-#                  'MINCOUNTS': 'Pixel below the instrument-specific minimum counts',
-#                   'OFFSLITS': 'Pixel does not belong to any slit',
-#                     'IS_NAN': 'Pixel value is undefined',
-#                      'IVAR0': 'Inverse variance is undefined',
-#                   'IVAR_NAN': 'Inverse variance is NaN',
-#                    'EXTRACT': 'Pixel masked during local skysub and extraction'
-#                }
-#         super(ScienceImageBitMask, self).__init__(list(mask.keys()), descr=list(mask.values()))
 
 class ScienceImage(processimages.ProcessImages):
     """
@@ -168,7 +141,7 @@ class ScienceImage(processimages.ProcessImages):
 
         # Other attributes that will be set later during object finding,
         # sky-subtraction, and extraction
-        self.slitmask = self.spectrograph.slitmask(self.tslits_dict)
+        self.slitmask = pixels.tslits2mask(self.tslits_dict)
         self.tilts = None # used by extract
         self.mswave = None # used by extract
         self.maskslits = None # used in find_object and extract
@@ -183,7 +156,6 @@ class ScienceImage(processimages.ProcessImages):
         self.skymask = None
         self.outmask = None
         self.mask = None                        # The composite bit value array
-#        self.bitmask = ScienceImageBitMask()    # The bit mask interpreter
         self.extractmask = None
         # SpecObjs object
         self.sobjs_obj = None # Only object finding but no extraction
@@ -268,7 +240,7 @@ class ScienceImage(processimages.ProcessImages):
             qa_title ="Finding objects on slit # {:d}".format(slit)
             msgs.info(qa_title)
             thismask = (self.slitmask == slit)
-            inmask = (self.mask == 0) & (self.crmask == False) & thismask
+            inmask = (self.mask == 0) & thismask
             # Find objects
             specobj_dict = {'setup': self.setup, 'slitid': slit,
                             'det': self.det, 'objtype': self.objtype, 'pypeline': self.pypeline}
@@ -278,7 +250,7 @@ class ScienceImage(processimages.ProcessImages):
             # is. This will be a png file(s) per slit.
             sig_thresh = 30.0 if std else self.par['sig_thresh']
             sobjs_slit, skymask[thismask] = \
-                extract.objfind(image, thismask, self.tslits_dict['lcen'][:,slit],self.tslits_dict['rcen'][:,slit],
+                extract.objfind(image, thismask, self.tslits_dict['slit_left'][:,slit],self.tslits_dict['slit_righ'][:,slit],
                 inmask=inmask, std_trace=std_trace, sig_thresh=sig_thresh, hand_extract_dict=self.par['manual'],specobj_dict=specobj_dict,
                 show_peaks=show_peaks,show_fits=show_fits, show_trace=show_trace,qa_title=qa_title,
                 nperslit=self.par['maxnumber'])
@@ -294,7 +266,7 @@ class ScienceImage(processimages.ProcessImages):
         return sobjs, len(sobjs), skymask
 
 
-    def find_objects_ech(self, image, std=False, snr_trim=False, std_trace = None, show=False, show_peaks=False, show_fits=False, show_trace = False, debug=False):
+    def find_objects_ech(self, image, std=False, std_trace = None, show=False, show_peaks=False, show_fits=False, show_trace = False, debug=False):
 
         # Did they run process?
         if not self._chk_objs(['sciivar']):
@@ -317,8 +289,8 @@ class ScienceImage(processimages.ProcessImages):
         # ToDO implement parsets here!
         sig_thresh = 30.0 if std else self.par['sig_thresh']
         sobjs_ech, skymask[self.slitmask > -1] = \
-            extract.ech_objfind(image, self.sciivar, self.slitmask, self.tslits_dict['lcen'], self.tslits_dict['rcen'],
-                                snr_trim=snr_trim, inmask=inmask, plate_scale=plate_scale, std_trace=std_trace,
+            extract.ech_objfind(image, self.sciivar, self.slitmask, self.tslits_dict['slit_left'], self.tslits_dict['slit_righ'],
+                                inmask=inmask, plate_scale=plate_scale, std_trace=std_trace,
                                 specobj_dict=specobj_dict,sig_thresh=sig_thresh,
                                 show_peaks=show_peaks, show_fits=show_fits, show_trace=show_trace, debug=debug)
 
@@ -380,9 +352,9 @@ class ScienceImage(processimages.ProcessImages):
             # Find sky
             self.global_sky[thismask] = skysub.global_skysub(self.sciimg, self.sciivar,
                                                              self.tilts, thismask,
-                                                             self.tslits_dict['lcen'][:,slit],
-                                                             self.tslits_dict['rcen'][:,slit],
-                                                             inmask=inmask, verbose=verbose,
+                                                             self.tslits_dict['slit_left'][:,slit],
+                                                             self.tslits_dict['slit_righ'][:,slit],
+                                                             inmask=inmask,
                                                              sigrej=sigrej,
                                                              bsp=self.par['bspline_spacing'],
                                                              no_poly=self.par['no_poly'],
@@ -496,9 +468,10 @@ class ScienceImage(processimages.ProcessImages):
                     self.extractmask[thismask] \
                         = skysub.local_skysub_extract(self.sciimg, self.sciivar, self.tilts,
                                                       self.waveimg, self.global_sky, self.rn2img,
-                                                      thismask, self.tslits_dict['lcen'][:,slit],
-                                                      self.tslits_dict['rcen'][:, slit],
-                                                      self.sobjs[thisobj], model_noise=model_noise,
+                                                      thismask, self.tslits_dict['slit_left'][:,slit],
+                                                      self.tslits_dict['slit_righ'][:, slit],
+                                                      self.sobjs[thisobj], model_full_slit=self.par['model_full_slit'],
+                                                      model_noise=model_noise,
                                                       std = std, bsp=self.par['bspline_spacing'],
                                                       sn_gauss=self.par['sn_gauss'],
                                                       inmask=inmask, show_profile=show_profile,
@@ -507,7 +480,8 @@ class ScienceImage(processimages.ProcessImages):
         # Set the bit for pixels which were masked by the extraction.
         # For extractmask, True = Good, False = Bad
         iextract = (self.mask == 0) & (self.extractmask == False)
-        self.outmask[iextract] += np.uint64(2**8)
+        self.outmask[iextract] = self.bitmask.turn_on(self.outmask[iextract], 'EXTRACT')
+
         # Step
         self.steps.append(inspect.stack()[0][3])
 
@@ -516,6 +490,47 @@ class ScienceImage(processimages.ProcessImages):
             self.show('resid', sobjs = self.sobjs, slits= True)
 
         # Return
+        return self.skymodel, self.objmodel, self.ivarmodel, self.outmask, self.sobjs
+
+    # JFH TODO Should we reduce the number of iterations for standards or near-IR redux where the noise model is not
+    # being updated?
+    def local_skysub_extract_ech(self, sobjs, waveimg, model_noise=True, min_snr=2.0, std = False, fit_fwhm=False,
+                                 maskslits=None, show_profile=False, show_resids=False, show_fwhm=True, show=False):
+        """
+        Perform local sky subtraction, profile fitting, and optimal extraction slit by slit
+
+        Wrapper to skysub.local_skysub_extract
+
+        Parameters
+        ----------
+        sobjs: object
+           Specobjs object containing Specobj objects containing information about objects found.
+        waveimg: ndarray, shape (nspec, nspat)
+           Wavelength map
+
+        Optional Parameters
+        -------------------
+
+        Returns:
+            global_sky: (numpy.ndarray) image of the the global sky model
+        """
+
+        order_vec = self.spectrograph.order_vec()
+        self.skymodel, self.objmodel, self.ivarmodel, self.outmask, self.sobjs = skysub.ech_local_skysub_extract(
+            self.sciimg, self.sciivar, self.mask, self.tilts, waveimg, self.global_sky,
+            self.rn2img, self.tslits_dict, sobjs, order_vec,
+            std=std, fit_fwhm=fit_fwhm, min_snr=min_snr, bsp = self.par['bspline_spacing'],
+            sn_gauss=self.par['sn_gauss'], model_full_slit=self.par['model_full_slit'], model_noise=model_noise,
+            show_profile=show_profile, show_resids=show_resids, show_fwhm=show_fwhm)
+
+
+        # Step
+        self.steps.append(inspect.stack()[0][3])
+
+        if show:
+            self.show('ech_local', sobjs = self.sobjs, slits= True)
+            self.show('ech_resid', sobjs = self.sobjs, slits= True)
+
         return self.skymodel, self.objmodel, self.ivarmodel, self.outmask, self.sobjs
 
 
@@ -537,7 +552,7 @@ class ScienceImage(processimages.ProcessImages):
             self.maskslits = maskslits
         elif (self.maskslits is None):
             # If maskslits was not passed, and it does not exist in self, reduce all slits
-            self.maskslits = np.zeros(self.tslits_dict['lcen'].shape[1], dtype=bool)
+            self.maskslits = np.zeros(self.tslits_dict['slit_left'].shape[1], dtype=bool)
         else: # Otherwise, if self.maskslits exists, use the previously set maskslits
             pass
         return self.maskslits
@@ -599,7 +614,7 @@ class ScienceImage(processimages.ProcessImages):
             sci_list = [sciimg_stack]
             var_stack = utils.calc_ivar(sciivar_stack)
             var_list = [var_stack, rn2img_stack]
-            sci_list_out, var_list_out, outmask, nused = procimg.weighted_combine(
+            sci_list_out, var_list_out, outmask, nused = coadd2d.weighted_combine(
                 weights, sci_list, var_list, (mask_stack == 0),
                 sigma_clip=sigma_clip, sigma_clip_stack = sciimg_stack, sigrej=sigrej, maxiters=maxiters)
             sciimg = sci_list_out[0]
@@ -750,11 +765,11 @@ class ScienceImage(processimages.ProcessImages):
 
         if slits:
             if self.tslits_dict is not None:
-                slit_ids = [trace_slits.get_slitid(self.sciimg.shape, self.tslits_dict['lcen'],
-                                                   self.tslits_dict['rcen'], ii)[0]
-                                for ii in range(self.tslits_dict['lcen'].shape[1])]
+                slit_ids = [trace_slits.get_slitid(self.sciimg.shape, self.tslits_dict['slit_left'],
+                                                   self.tslits_dict['slit_righ'], ii)[0]
+                                for ii in range(self.tslits_dict['slit_left'].shape[1])]
 
-                ginga.show_slits(viewer, ch, self.tslits_dict['lcen'], self.tslits_dict['rcen'],
+                ginga.show_slits(viewer, ch, self.tslits_dict['slit_left'], self.tslits_dict['slit_righ'],
                                  slit_ids)  # , args.det)
 
     def __repr__(self):

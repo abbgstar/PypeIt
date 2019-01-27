@@ -644,7 +644,8 @@ class FluxCalibrationPar(ParSet):
     For a table with the current keywords, defaults, and descriptions,
     see :ref:`pypeitpar`.
     """
-    def __init__(self, nonlinear=None, sensfunc=None):
+    def __init__(self, balm_mask_wid=None, std_file=None, std_obj_id=None, sensfunc=None,
+                 star_type=None, star_mag=None, multi_det=None, telluric=None):
 
         # Grab the parameter names and values from the function
         # arguments
@@ -657,17 +658,35 @@ class FluxCalibrationPar(ParSet):
         dtypes = OrderedDict.fromkeys(pars.keys())
         descr = OrderedDict.fromkeys(pars.keys())
 
-        # Fill out parameter specifications.  Only the values that are
-        # *not* None (i.e., the ones that are defined) need to be set
-        # TODO: I don't think this is used anywhere
-        defaults['nonlinear'] = False
-        dtypes['nonlinear'] = bool
-        descr['nonlinear'] = 'Perform a non-linear correction.  Requires a series of ' \
-                             'pixelflats of the same lamp and setup and with a variety of ' \
-                             'exposure times and count rates in every pixel.'
+        defaults['balm_mask_wid'] = 5.
+        dtypes['balm_mask_wid'] = float
+        descr['balm_mask_wid'] = 'Mask width for Balmer lines in Angstroms.'
+
+        dtypes['std_file'] = str
+        descr['std_file'] = 'Standard star file to generate sensfunc'
+
+        dtypes['std_obj_id'] = [str, int]
+        descr['std_obj_id'] = 'Specifies object in spec1d file to use as standard.' \
+            ' The brightest object found is used otherwise.'
+
+        dtypes['multi_det'] = list
+        descr['multi_det'] = 'List of detector numbers to splice together for multi-detector instruments (e.g. DEIMOS)' \
+                        ' They are assumed to be in order of increasing wavelength' \
+                        ' And that there is *no* overlap in wavelength across detectors (might be ok if there is)'
 
         dtypes['sensfunc'] = str
-        descr['sensfunc'] = 'YAML file with an existing calibration function'
+        descr['sensfunc'] = 'FITS file that contains or will contain the sensitivity function.'
+
+        defaults['telluric'] = False
+        dtypes['telluric'] = bool
+        descr['telluric'] = 'If telluric=True the code creates a sintetic standard star spectrum using the Kurucz models, ' \
+            'the sens func is created setting nresln=1.5 it contains the correction for telluric lines.'
+
+        dtypes['star_type'] = float
+        descr['star_type'] = 'Spectral type of the standard star (for near-IR mainly)'
+
+        dtypes['star_mag'] = float
+        descr['star_mag'] = 'Magnitude of the standard star (for near-IR mainly)'
 
         # Instantiate the parameter set
         super(FluxCalibrationPar, self).__init__(list(pars.keys()),
@@ -680,7 +699,8 @@ class FluxCalibrationPar(ParSet):
     @classmethod
     def from_dict(cls, cfg):
         k = cfg.keys()
-        parkeys = [ 'nonlinear', 'sensfunc' ]
+        parkeys = ['balm_mask_wid',  'sensfunc', 'std_file', 'std_obj_id',
+                   'star_type', 'star_mag', 'multi_det', 'telluric']
         kwargs = {}
         for pk in parkeys:
             kwargs[pk] = cfg[pk] if pk in k else None
@@ -690,7 +710,7 @@ class FluxCalibrationPar(ParSet):
         """
         Check the parameters are valid for the provided method.
         """
-        if self.data['sensfunc'] is not None and not os.path.isfile(self.data['sensfunc']):
+        if self.data['sensfunc'] is not None and self.data['std_file'] is None and not os.path.isfile(self.data['sensfunc']):
             raise ValueError('Provided sensitivity function does not exist: {0}.'.format(
                              self.data['sensfunc']))
 
@@ -1256,7 +1276,7 @@ class TraceSlitsPar(ParSet):
                  maxgap=None, maxshift=None, pad=None, sigdetect=None,
                  min_slit_width = None, add_slits=None, rm_slits=None,
                  diffpolyorder=None, single=None, sobel_mode=None, pcatype=None, pcapar=None,
-                 pcaextrap=None):
+                 pcaextrap=None, smash_range=None, mask_frac_thresh=None):
 
         # Grab the parameter names and values from the function
         # arguments
@@ -1313,7 +1333,7 @@ class TraceSlitsPar(ParSet):
 
         defaults['maxshift'] = 0.15
         dtypes['maxshift'] = [int, float]
-        descr['maxshift'] = 'Maximum shift in trace crude'
+        descr['maxshift'] = 'Maximum shift in trace crude. Use a larger number for more curved slits/orders.'
 
         defaults['pad'] = 0
         dtypes['pad'] = int
@@ -1322,6 +1342,15 @@ class TraceSlitsPar(ParSet):
         defaults['sigdetect'] = 20.0
         dtypes['sigdetect'] = [int, float]
         descr['sigdetect'] = 'Sigma detection threshold for edge detection'
+
+        defaults['mask_frac_thresh'] = 0.6
+        dtypes['mask_frac_thresh'] = float
+        descr['mask_frac_thresh'] = 'Minimum fraction of the slit edge that was *not* masked to use in initial PCA.'
+
+        defaults['smash_range'] = [0., 1.]
+        dtypes['smash_range'] = list
+        descr['smash_range'] = 'Range of the slit in the spectral direction (in fractional units) to smash when searching for slit edges. ' \
+                             'If the spectrum covers only a portion of the image, use that range.'
 
         defaults['min_slit_width'] = 6.0  # arcseconds!
         dtypes['min_slit_width'] = float
@@ -1364,6 +1393,7 @@ class TraceSlitsPar(ParSet):
         descr['sobel_mode'] = 'Mode for Sobel filtering.  Default is \'nearest\' but the ' \
                               'developers find \'constant\' works best for DEIMOS.'
 
+        # DEPRECATED
         defaults['pcatype'] = 'pixel'
         options['pcatype'] = TraceSlitsPar.valid_pca_types()
         dtypes['pcatype'] = str
@@ -1373,6 +1403,7 @@ class TraceSlitsPar(ParSet):
                            'irregular.  Order is used for echelle spectroscopy or for slits ' \
                            'with separations that are a smooth function of the slit number.'
 
+        # DEPRECATED
         defaults['pcapar'] = [3, 2, 1, 0]
         dtypes['pcapar'] = list
         descr['pcapar'] = 'Order of the polynomials to be used to fit the principle ' \
@@ -1399,7 +1430,8 @@ class TraceSlitsPar(ParSet):
         k = cfg.keys()
         parkeys = [ 'function', 'polyorder', 'medrep', 'number', 'trim', 'maxgap', 'maxshift',
                     'pad', 'sigdetect', 'min_slit_width', 'diffpolyorder', 'single', 'sobel_mode',
-                    'pcatype', 'pcapar', 'pcaextrap', 'add_slits', 'rm_slits']
+                    'pcatype', 'pcapar', 'pcaextrap', 'add_slits', 'rm_slits', 'smash_range',
+                    'mask_frac_thresh']
         kwargs = {}
         for pk in parkeys:
             kwargs[pk] = cfg[pk] if pk in k else None
@@ -1806,7 +1838,7 @@ class ScienceImagePar(ParSet):
     see :ref:`pypeitpar`.
     """
 
-    def __init__(self, bspline_spacing=None, sig_thresh=None, maxnumber=None, sn_gauss=None,
+    def __init__(self, bspline_spacing=None, sig_thresh=None, maxnumber=None, sn_gauss=None, model_full_slit=None,
                  no_poly=None, manual=None):
 
         # Grab the parameter names and values from the function
@@ -1854,6 +1886,12 @@ class ScienceImagePar(ParSet):
                             'b-spline fit to the object profile. For S/N < sn_gauss the code will simply optimal extract' \
                             'with a Gaussian with FWHM determined from the object finding.'
 
+        defaults['model_full_slit'] = False
+        dtypes['model_full_slit'] = bool
+        descr['model_full_slit'] = 'If True local sky subtraction will be performed on the entire slit. If False, local sky subtraction will ' \
+                            'be applied to only a restricted region around each object. This should be set to True for either multislit ' \
+                            'observations using narrow slits or echelle observations with narrow slits'
+
         dtypes['manual'] = list
         descr['manual'] = 'List of manual extraction parameter sets'
 
@@ -1870,7 +1908,7 @@ class ScienceImagePar(ParSet):
     def from_dict(cls, cfg):
         k = cfg.keys()
         #ToDO change to updated param list
-        parkeys = ['bspline_spacing', 'sig_thresh', 'maxnumber', 'sn_gauss', 'manual', 'no_poly']
+        parkeys = ['bspline_spacing', 'sig_thresh', 'maxnumber', 'sn_gauss', 'model_full_slit', 'no_poly', 'manual']
         kwargs = {}
         for pk in parkeys:
             kwargs[pk] = cfg[pk] if pk in k else None
