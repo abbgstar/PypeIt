@@ -850,8 +850,8 @@ def fit_profile(image, ivar, waveimg, thismask, spat_img, trace_in, wave, flux, 
     si = inside[np.argsort(sigma_x.flat[inside])]
     sr = si[::-1]
 
-    bset, bmask = pydl.iterfit(sigma_x.flat[si],norm_obj.flat[si], invvar = norm_ivar.flat[si]
-                           , nord = 4, bkpt = bkpt, maxiter = 15, upper = 1, lower = 1)
+    bset, bmask = pydl.iterfit(sigma_x.flat[si],norm_obj.flat[si], invvar = norm_ivar.flat[si],
+                                   nord = 4, bkpt = bkpt, maxiter = 15, upper = 1, lower = 1)
     mode_fit, _ = bset.value(sigma_x.flat[si])
     median_fit = np.median(norm_obj[norm_ivar > 0.0])
 
@@ -958,11 +958,7 @@ def fit_profile(image, ivar, waveimg, thismask, spat_img, trace_in, wave, flux, 
 
         mode_stretch_set = mode_stretch_out[0]
         temp_set = pydl.bspline(None, fullbkpt = mode_stretch_set.breakpoints,nord=mode_stretch_set.nord)
-        try:
-            temp_set.coeff = mode_stretch_set.coeff[0, :]
-        except:
-            from IPython import embed
-            embed()
+        temp_set.coeff = mode_stretch_set.coeff[0, :]
         h0, _ = temp_set.value(xx)
         temp_set.coeff = mode_stretch_set.coeff[1, :]
         h2, _ = temp_set.value(xx)
@@ -1181,7 +1177,7 @@ def parse_hand_dict(hand_extract_dict):
 
 
 def iter_tracefit(image, xinit_in, ncoeff, inmask = None, trc_inmask = None, fwhm = 3.0, maxdev = 5.0, maxiter = 25,
-                  niter=6,gweight=False,show_fits=False, idx = None, verbose=False, xmin= None, xmax = None):
+                  niter=9,gweight=False,show_fits=False, idx = None, verbose=False, xmin= None, xmax = None):
     """ Utility routine for object find to iteratively trace and fit. Used by both objfind and ech_objfind
 
     Parameters
@@ -1275,6 +1271,7 @@ def iter_tracefit(image, xinit_in, ncoeff, inmask = None, trc_inmask = None, fwh
         title_text = 'Flux Weighted'
 
     xfit1 = np.copy(xinit)
+
     for iiter in range(niter):
         if gweight:
             xpos1, xerr1 = trace_slits.trace_gweight(image*inmask,xfit1, invvar=inmask.astype(float),sigma=fwhm/2.3548)
@@ -1286,7 +1283,7 @@ def iter_tracefit(image, xinit_in, ncoeff, inmask = None, trc_inmask = None, fwh
         # ToDO add maxdev functionality by adding kwargs_reject to xy2traceset
         xinvvar = np.ones_like(xpos1.T) # Do not do weighted fits, i.e. uniform weights but set the errro to 1.0 pixel
         pos_set1 = pydl.xy2traceset(np.outer(np.ones(nobj),spec_vec), xpos1.T, inmask = trc_inmask_out.T, ncoeff=ncoeff, maxdev=maxdev,
-                                    maxiter=maxiter,invvar = xinvvar,xmin=xmin, xmax =xmax)
+                                    maxiter=maxiter, invvar=xinvvar, xmin=xmin, xmax =xmax)
         xfit1 = pos_set1.yfit.T
         # bad pixels have errors set to 999 and are returned to lie on the input trace. Use this only for plotting below
         tracemask1 = (xerr1 > 990.0)  # bad pixels have errors set to 999 and are returned to lie on the input trace
@@ -1298,9 +1295,11 @@ def iter_tracefit(image, xinit_in, ncoeff, inmask = None, trc_inmask = None, fwh
                 plt.plot(spec_vec,xinit[:,iobj],c='g', zorder = 20, linewidth=2.0,linestyle='--', label='initial guess')
                 plt.plot(spec_vec,xfit1[:,iobj],c='red',zorder=10,linewidth = 2.0, label ='fit to trace')
                 if np.any(~nomask):
-                    plt.plot(spec_vec[~nomask],xfit1[~nomask,iobj], c='blue',marker='+',markersize=5.0,linestyle='None',zorder= 20, label='masked points, set to init guess')
+                    plt.plot(spec_vec[np.invert(nomask)],xfit1[np.invert(nomask),iobj], c='blue',marker='+',
+                             markersize=5.0,linestyle='None',zorder= 20, label='masked points, set to init guess')
                 if np.any(~trc_inmask_out):
-                    plt.plot(spec_vec[~trc_inmask_out[:,iobj]],xfit1[~trc_inmask_out[:,iobj],iobj], c='orange',marker='s',markersize=5.0,linestyle='None',zorder= 20, label='input masked points, not fit')
+                    plt.plot(spec_vec[np.invert(trc_inmask_out[:,iobj])],xfit1[np.invert(trc_inmask_out[:,iobj]),iobj],
+                             c='orange',marker='s',markersize=5.0,linestyle='None',zorder= 20, label='input masked points, not fit')
                 try:
                     plt.title(title_text + ' Centroid to object {:s}.'.format(idx[iobj]))
                 except TypeError:
@@ -1348,11 +1347,11 @@ def create_skymask_fwhm(sobjs, thismask):
 
         return skymask
 
-def objfind(image, thismask, slit_left, slit_righ, inmask = None, fwhm = 3.0,
-            hand_extract_dict = None, std_trace = None, ncoeff = 5, nperslit =None,  bg_smth = 5.0,
-            extract_maskwidth = 4.0, sig_thresh = 10.0, peak_thresh = 0.0, abs_thresh = 0.0, trim_edg = (5,5),
-            skymask_nthresh = 1.0, specobj_dict=None,
-            show_peaks=False, show_fits = False, show_trace = False, qa_title=''):
+def objfind(image, thismask, slit_left, slit_righ, inmask=None, fwhm=3.0,
+            hand_extract_dict=None, std_trace=None, ncoeff=5, nperslit=None, bg_smth=5.0,
+            extract_maskwidth=4.0, sig_thresh=10.0, peak_thresh=0.0, abs_thresh=0.0, trim_edg=(5,5),
+            skymask_nthresh=1.0, specobj_dict=None,
+            show_peaks=False, show_fits=False, show_trace=False, qa_title=''):
 
     """ Find the location of objects in a slitmask slit or a echelle order.
 
@@ -1573,7 +1572,8 @@ def objfind(image, thismask, slit_left, slit_righ, inmask = None, fwhm = 3.0,
             # ToDo Label with objid and objind here?
             thisobj = specobjs.SpecObj(frameshape, slit_spat_pos, slit_spec_pos, det = specobj_dict['det'],
                                        setup = specobj_dict['setup'], slitid = specobj_dict['slitid'],
-                                       objtype=specobj_dict['objtype'], pypeline=specobj_dict['pypeline'])
+                                       orderindx = specobj_dict['orderindx'], objtype=specobj_dict['objtype'],
+                                       pypeline=specobj_dict['pypeline'])
             thisobj.spat_fracpos = xcen[iobj]/nsamp
             thisobj.smash_peakflux = ypeak[iobj]
             thisobj.smash_nsig = ypeak[iobj]/sigma
@@ -1684,9 +1684,11 @@ def objfind(image, thismask, slit_left, slit_righ, inmask = None, fwhm = 3.0,
     if len(sobjs) > 0:
         # Note the transpose is here to pass in the trace_spat correctly.
         xinit_fweight = np.copy(sobjs.trace_spat.T)
-        xfit_fweight, _, _, _= iter_tracefit(image, xinit_fweight,ncoeff,inmask = inmask, fwhm=fwhm,idx = sobjs.idx, show_fits=show_fits)
+        xfit_fweight, _, _, _= iter_tracefit(image, xinit_fweight,ncoeff,inmask = inmask, fwhm=fwhm,idx = sobjs.idx,
+                                             show_fits=show_fits)
         xinit_gweight = np.copy(xfit_fweight)
-        xfit_gweight, _ , _, _= iter_tracefit(image, xinit_gweight,ncoeff,inmask = inmask, fwhm=fwhm,gweight = True, idx = sobjs.idx, show_fits=show_fits)
+        xfit_gweight, _ , _, _= iter_tracefit(image, xinit_gweight,ncoeff,inmask = inmask, fwhm=fwhm,gweight = True,
+                                              idx = sobjs.idx, show_fits=show_fits)
 
         # assign the final trace
         for iobj in range(nobj_reg):
@@ -1700,7 +1702,7 @@ def objfind(image, thismask, slit_left, slit_righ, inmask = None, fwhm = 3.0,
         # First Parse the hand_dict
         hand_extract_spec, hand_extract_spat, hand_extract_det, hand_extract_fwhm = parse_hand_dict(hand_extract_dict)
         # Determine if these hand apertures land on the slit in question
-        hand_on_slit = np.where(np.array(thismask[int(np.rint(hand_extract_spec)),int(np.rint(hand_extract_spat))]))[0]
+        hand_on_slit = np.where(np.array(thismask[np.rint(hand_extract_spec).astype(int), np.rint(hand_extract_spat).astype(int)]))[0]
         hand_extract_spec = hand_extract_spec[hand_on_slit]
         hand_extract_spat = hand_extract_spat[hand_on_slit]
         hand_extract_det  = hand_extract_det[hand_on_slit]
@@ -1722,6 +1724,7 @@ def objfind(image, thismask, slit_left, slit_righ, inmask = None, fwhm = 3.0,
             thisobj = specobjs.SpecObj(frameshape, slit_spat_pos, slit_spec_pos,
                                        det=specobj_dict['det'],
                                        setup=specobj_dict['setup'], slitid=specobj_dict['slitid'],
+                                       orderindx = specobj_dict['orderindx'],
                                        objtype=specobj_dict['objtype'])
             thisobj.hand_extract_spec = hand_extract_spec[iobj]
             thisobj.hand_extract_spat = hand_extract_spat[iobj]
@@ -1744,6 +1747,7 @@ def objfind(image, thismask, slit_left, slit_righ, inmask = None, fwhm = 3.0,
                 thisobj.fwhm = med_fwhm_reg
             else:  # Otherwise just use the fwhm parameter input to the code (or the default value)
                 thisobj.fwhm = fwhm
+            # Finish
             sobjs.add_sobj(thisobj)
 
     nobj = len(sobjs)
@@ -1751,7 +1755,7 @@ def objfind(image, thismask, slit_left, slit_righ, inmask = None, fwhm = 3.0,
     #if nobj == 0:
     #    return (None, skymask, objmask)
 
-    ## Okay now loop over all the regular aps and exclude any which within a fwhm of the hand_extract_APERTURES
+    ## Okay now loop over all the regular aps and exclude any which within the fwhm of the hand_extract_APERTURES
     if nobj_reg > 0 and hand_extract_dict is not None:
         spat_pixpos = sobjs.spat_pixpos
         hand_flag = sobjs.hand_extract_flag
@@ -1759,23 +1763,23 @@ def objfind(image, thismask, slit_left, slit_righ, inmask = None, fwhm = 3.0,
         #spat_pixpos = np.array([spec.spat_pixpos for spec in specobjs])
         #hand_flag = np.array([spec.hand_extract_flag for spec in specobjs])
         #spec_fwhm = np.array([spec.fwhm for spec in specobjs])
-        reg_ind, = np.where(hand_flag == False)
-        hand_ind, = np.where(hand_flag == True)
-        med_fwhm = np.median(spec_fwhm[hand_flag == False])
-        spat_pixpos_hand = spat_pixpos[hand_ind]
+        reg_ind, = np.where(~hand_flag)
+        hand_ind, = np.where(hand_flag)
+        #med_fwhm = np.median(spec_fwhm[~hand_flag])
+        #spat_pixpos_hand = spat_pixpos[hand_ind]
         keep = np.ones(nobj,dtype=bool)
-        for ireg in range(nobj_reg):
-            close = np.abs(sobjs[reg_ind[ireg]].spat_pixpos - spat_pixpos_hand) <= 0.6*med_fwhm
+        for ihand in hand_ind:
+            close = np.abs(sobjs[reg_ind].spat_pixpos - spat_pixpos[ihand]) <= 0.6*spec_fwhm[ihand]
             if np.any(close):
                 # Print out a warning
-                msgs.warn('Deleting object {:s}'.format(sobjs[reg_ind[ireg]].idx) +
+                msgs.warn('Deleting object(s) {}'.format(sobjs[reg_ind[close]].idx) +
                           ' because it collides with a user specified hand_extract aperture')
-                for ihand in range(len(close)):
-                    if close[ihand] == True:
-                        msgs.warn('Hand aperture at (hand_extract_spec, hand_extract_spat) = ({:6.2f}'.format(sobjs[hand_ind[ihand]].hand_extract_spec) +
-                                  ',{:6.2f})'.format(sobjs[hand_ind[ihand]].hand_extract_spat) +
-                                  ' lands within 0.6*med_fwhm = {:4.2f}'.format(0.6*med_fwhm) + ' pixels of this object')
-                keep[reg_ind[ireg]] = False
+                #for ihand in range(len(close)):
+                #    if close[ihand] is True:
+                #        msgs.warn('Hand aperture at (hand_extract_spec, hand_extract_spat) = ({:6.2f}'.format(sobjs[hand_ind[ihand]].hand_extract_spec) +
+                #                  ',{:6.2f})'.format(sobjs[hand_ind[ihand]].hand_extract_spat) +
+                #                  ' lands within 0.6*med_fwhm = {:4.2f}'.format(0.6*med_fwhm) + ' pixels of this object')
+                keep[reg_ind[close]] = False
 
         sobjs = sobjs[keep]
 
@@ -2047,7 +2051,8 @@ def ech_objfind(image, ivar, slitmask, slit_left, slit_righ, inmask=None, fof_li
     """
 
     if specobj_dict is None:
-        specobj_dict = {'setup': 'unknown', 'slitid': 999, 'det': 1, 'objtype': 'unknown', 'pypeline': 'Echelle'}
+        specobj_dict = {'setup': 'unknown', 'slitid': 999, 'orderindx': 999,
+                        'det': 1, 'objtype': 'unknown', 'pypeline': 'Echelle'}
 
 
     # TODO Update FOF algorithm here with the one from scikit-learn.
@@ -2098,13 +2103,14 @@ def ech_objfind(image, ivar, slitmask, slit_left, slit_righ, inmask=None, fof_li
         thismask = slitmask == iord
         inmask_iord = inmask & thismask
         specobj_dict['slitid'] = iord
+        specobj_dict['orderindx'] = iord
         try:
             std_in = std_trace[:,iord]
         except TypeError:
             std_in = None
         sobjs_slit, skymask_objfind[thismask] = \
             objfind(image, thismask, slit_left[:,iord], slit_righ[:,iord], inmask=inmask_iord,std_trace=std_in,
-                    fwhm=fwhm,hand_extract_dict=hand_extract_dict, nperslit=nperslit, bg_smth=bg_smth,
+                    ncoeff=ncoeff, fwhm=fwhm,hand_extract_dict=hand_extract_dict, nperslit=nperslit, bg_smth=bg_smth,
                     extract_maskwidth=extract_maskwidth, sig_thresh=sig_thresh, peak_thresh=peak_thresh, abs_thresh=abs_thresh,
                     trim_edg=trim_edg, show_peaks=show_peaks,show_fits=show_fits, show_trace=show_single_trace,
                     specobj_dict=specobj_dict)
@@ -2336,6 +2342,7 @@ def ech_objfind(image, ivar, slitmask, slit_left, slit_righ, inmask=None, fof_li
         # Perform iterative flux weighted centroiding using new PCA predictions
         xinit_fweight = pca_fits[:,:,iobj].copy()
         inmask_now = inmask & allmask
+        # TODO Input fwhm here
         xfit_fweight, _, _, _= iter_tracefit(image, xinit_fweight, ncoeff, inmask = inmask_now, show_fits=show_fits)
         # Perform iterative Gaussian weighted centroiding
         xinit_gweight = xfit_fweight.copy()

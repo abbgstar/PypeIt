@@ -111,6 +111,9 @@ class PypeItMetaData:
         self.table = table.Table(data if file_list is None 
                                  else self._build(file_list, strict=strict, usrdata=usrdata))
                         #else self._build(file_list, strict=strict))
+        # Sort on filename
+        self.table.sort('filename')
+        #
         if usrdata is not None:
             self.merge(usrdata)
         # Instrument-specific validation of the header metadata. This
@@ -302,6 +305,57 @@ class PypeItMetaData:
         # Return
         return data
 
+    def get_manual_extract(self, frames, det):
+        """
+        Parse the manual_extract column for a given frame and detector
+
+        Args:
+            frames (list): List of frame indices;  can be one
+            det (int): Detector number
+
+        Returns:
+            None or dict: None if manual extraction is not set for this frame+det
+              otherwise a dict of the values
+
+        """
+
+        # Manual extract
+        if 'manual_extract' not in self.keys():
+            return None
+        # Warn me
+        if len(frames) > 1:
+            msgs.warn("Taking first science frame in stack for manual extraction")
+        frame = frames[0]
+        # Empty?
+        if self['manual_extract'][frame] == 'None':
+            return None
+
+        # Parse the input
+        manual_extract_dict = {}
+        items = self['manual_extract'][frame].split(',')
+        dets, spats, specs, fwhms = [], [], [], []
+        for item in items:
+            numbers = item.split(':')
+            det_in = int(numbers[0])
+            # Only keep those on this detector
+            if np.abs(det_in) != det:  # Allow for negative values for negative image
+                continue
+            # Save
+            dets.append(det_in)
+            specs.append(float(numbers[1]))
+            spats.append(float(numbers[2]))
+            fwhms.append(float(numbers[3]))
+
+        # Fill as arrays -- No more lists!
+        manual_extract_dict['hand_extract_spec'] = np.array(specs)
+        manual_extract_dict['hand_extract_spat'] = np.array(spats)
+        manual_extract_dict['hand_extract_det'] = np.array(dets)
+        manual_extract_dict['hand_extract_fwhm'] = np.array(fwhms)
+
+        return manual_extract_dict
+
+
+    '''
     def update_par(self, par):
 
         # Manual extract
@@ -327,6 +381,7 @@ class PypeItMetaData:
             par['scienceimage']['manual'] = mext_list
         # Return
         return par
+    '''
 
 
     # TODO:  In this implementation, slicing the PypeItMetaData object
@@ -608,7 +663,7 @@ class PypeItMetaData:
                        'namp': self.spectrograph.detector[d-1]['numamplifiers']}
         return setup[skey] if config_only else setup
 
-    def get_configuration_names(self, ignore=None, return_index=False):
+    def get_configuration_names(self, ignore=None, return_index=False, configs=None):
         """
         Get the list of the unique configuration names.
         
@@ -625,6 +680,10 @@ class PypeItMetaData:
             return_index (:obj:`bool, optional):
                 Return row indices with the first occurence of these
                 configurations.
+            configs (:obj:`list`, optional):
+                Only pass back those matching this set of input configs
+                if ['all'], pass back all
+                Otherwise, a list like ['A','C'] is expected
 
         Returns:
             numpy.array: The list of unique setup names.  A second
@@ -646,6 +705,15 @@ class PypeItMetaData:
             rm = np.invert(np.isin(setups, ignore))
             setups = setups[rm]
             indx = indx[rm]
+
+        # Restrict
+        if configs is not None:
+            if configs[0] == 'all':
+                pass
+            else:
+                use = np.isin(setups, configs)
+                setups = setups[use]
+                indx = indx[use]
 
         return setups, indx if return_index else setups
 
@@ -1414,7 +1482,8 @@ class PypeItMetaData:
         ff.write(yaml.dump(utils.yamlify(cfg)))
         ff.close()
 
-    def write_pypeit(self, ofile, ignore=None, cfg_lines=None, write_bkg_pairs=False):
+    def write_pypeit(self, ofile, ignore=None, cfg_lines=None, write_bkg_pairs=False,
+                     configs=None):
         """
         Write a *.pypeit file in data-table format.
 
@@ -1427,7 +1496,7 @@ class PypeItMetaData:
 
         Args:
             ofile (:obj:`str`):
-                Name for the output pypeit file.
+                Name (typically the root) for the output .pypeit file.
             overwrite (:obj:`bool`, optional):
                 Overwrite any existing file(s).
             ignore (:obj:`list`, optional):
@@ -1445,6 +1514,8 @@ class PypeItMetaData:
                     - `empty`: The columns are added but their values
                       are all originally set to -1.  **This is
                       currently the only option.**
+            configs (str, optional):
+                Configs to
 
         Raises:
             PypeItError:
@@ -1454,7 +1525,7 @@ class PypeItMetaData:
         output_cols = self.set_pypeit_cols(write_bkg_pairs=write_bkg_pairs)
 
         # Unique configurations
-        setups, indx = self.get_configuration_names(ignore=ignore, return_index=True)
+        setups, indx = self.get_configuration_names(ignore=ignore, return_index=True, configs=configs)
 
         for setup,i in zip(setups, indx):
             # Create the output directory

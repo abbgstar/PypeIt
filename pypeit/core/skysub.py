@@ -15,9 +15,19 @@ from scipy.special import ndtr
 import scipy
 
 def skysub_npoly(thismask):
+    """
+    Utility routine used by global_skysub and local_skysub_extract. Determine the order for the spatial
+    polynomial for global sky subtraction and local sky subtraction.
+    Args:
+        thismask:
+
+    Returns:
+        npoly: int
+           Order of polynomial
+    """
     slit_width = np.sum(thismask,axis=1)
     med_slit_width = np.median(slit_width[slit_width > 0])
-    nspec_eff = np.sum(slit_width > 0.5*slit_width)
+    nspec_eff = np.sum(slit_width > 0.5*med_slit_width)
     npercol = np.fmax(np.floor(np.sum(thismask)/nspec_eff), 1.0)
     # Demand at least 10 pixels per row (on average) per degree of the polynomial
     if npercol > 100:
@@ -218,8 +228,26 @@ def global_skysub(image, ivar, tilts, thismask, slit_left, slit_righ, inmask = N
 
 
 
-# Utility routine used by local_bg_subtraction_slit
-def skyoptimal(wave, data, ivar, oprof, sortpix, sigrej = 3.0, npoly=1, spatial=None, fullbkpt=None):
+# TODO -- This needs JFH docs, desperately
+def skyoptimal(wave, data, ivar, oprof, sortpix, sigrej=3.0, npoly=1, spatial=None, fullbkpt=None):
+    """
+    Utility routine used by local_bg_subtraction_slit
+
+    Args:
+        wave:
+        data:
+        ivar:
+        oprof (ndarray): Flattened object profile in this slit
+        sortpix:
+        sigrej:
+        npoly:
+        spatial:
+        fullbkpt:
+
+    Returns:
+        ndarray, ndarray, ndarray:
+
+    """
 
 
     nx = data.size
@@ -266,9 +294,9 @@ def skyoptimal(wave, data, ivar, oprof, sortpix, sigrej = 3.0, npoly=1, spatial=
     sigind = int(np.fmin(np.rint(gauss_prob * float(ngood)), ngood - 1))
     chi2_sigrej = chi2_srt[sigind]
     mask1 = (chi2 < chi2_sigrej)
+
     msgs.info('2nd round....')
     msgs.info('Iter     Chi^2     Rejected Pts')
-
     if np.any(mask1):
         sset, outmask_good, yfit, red_chi, exit_status = \
             utils.bspline_profile(wave[good], data[good], ivar[good], profile_basis[good, :], inmask=mask1,
@@ -554,7 +582,6 @@ def local_skysub_extract(sciimg, sciivar, tilts, waveimg, global_sky, rn2_img, t
            sky model for the pixels
 
     """
-
     if inmask is None:
         inmask = (sciivar > 0.0) & thismask & np.isfinite(sciimg) & np.isfinite(sciivar)
 
@@ -589,8 +616,9 @@ def local_skysub_extract(sciimg, sciivar, tilts, waveimg, global_sky, rn2_img, t
     # Set some rejection parameters based on whether this is a standard or not. Only reject extreme outliers for standards
     # since super high S/N and low order profile models imply we will always have large outliers
     if std is True:
-        chi2_sigrej = 500.0
+        chi2_sigrej = 100.0
         sigrej_ceil = 1e10
+        sigrej = 25.0
     else:
         chi2_sigrej = 6.0
         sigrej_ceil = 10.0
@@ -676,7 +704,7 @@ def local_skysub_extract(sciimg, sciivar, tilts, waveimg, global_sky, rn2_img, t
                                               ycen=sobjs[iobj].trace_spec)
                     pixtot = extract.extract_boxcar(0 * mvarimg + 1.0, sobjs[iobj].trace_spat, box_rad,
                                             ycen=sobjs[iobj].trace_spec)
-                    mask_box = (extract.extract_boxcar(~outmask, sobjs[iobj].trace_spat, box_rad,
+                    mask_box = (extract.extract_boxcar(np.invert(outmask), sobjs[iobj].trace_spat, box_rad,
                                                ycen=sobjs[iobj].trace_spec) != pixtot)
                     box_denom = extract.extract_boxcar(waveimg > 0.0, sobjs[iobj].trace_spat, box_rad,
                                                ycen=sobjs[iobj].trace_spec)
@@ -728,11 +756,6 @@ def local_skysub_extract(sciimg, sciivar, tilts, waveimg, global_sky, rn2_img, t
             iterbsp = 0
             while (not sky_bmodel.any()) & (iterbsp <= 5):
                 bsp_now = (1.2 ** iterbsp) * bsp
-                #ibool = (spec_img >= spec_min) & (spec_img <= spec_max) & \
-                #        (spat_img >= spat_min) & (spat_img <= spat_max) & \
-                #        (spat_img >= min_spat) & (spat_img <= max_spat) & \
-                #        thismask
-                #sampmask = (waveimg > 0.0) & ibool
                 fullbkpt = optimal_bkpts(bkpts_optimal, bsp_now, piximg, localmask, debug=(debug_bkpts & (iiter == niter)),
                                          skyimage=skyimage, min_spat=min_spat, max_spat=max_spat)
                 # check to see if only a subset of the image is used.
@@ -740,6 +763,7 @@ def local_skysub_extract(sciimg, sciivar, tilts, waveimg, global_sky, rn2_img, t
                 isub, = np.where(localmask.flatten())
                 sortpix = (piximg.flat[isub]).argsort()
                 obj_profiles_flat = obj_profiles.reshape(nspec * nspat, objwork)
+
                 skymask = outmask & np.invert(edgmask)
                 sky_bmodel, obj_bmodel, outmask_opt = skyoptimal(piximg.flat[isub], sciimg.flat[isub],
                                                                  (modelivar * skymask).flat[isub],
@@ -762,8 +786,10 @@ def local_skysub_extract(sciimg, sciivar, tilts, waveimg, global_sky, rn2_img, t
                 #var_no = np.abs(sky_bmodel - np.sqrt(2.0) * np.sqrt(rn2_img.flat[isub])) + rn2_img.flat[isub]
                 igood1 = skymask.flat[isub]
                 #  update the outmask for only those pixels that were fit. This prevents masking of slit edges in outmask
-                if False:
-                    outmask.flat[isub[igood1]] = outmask_opt[igood1]
+                outmask.flat[isub[igood1]] = outmask_opt[igood1]
+                #from pypeit.ginga import show_image
+                #show_image(sciimg*outmask)
+                #debugger.set_trace()
                 #  For weighted co-adds, the variance of the image is no longer equal to the image, and so the modelivar
                 #  eqn. below is not valid. However, co-adds already have the model noise propagated correctly in sciivar,
                 #  so no need to re-model the variance.
@@ -789,8 +815,7 @@ def local_skysub_extract(sciimg, sciivar, tilts, waveimg, global_sky, rn2_img, t
                               ', use threshold sigrej_eff = {:5.2f}'.format(sigrej_eff))
                     # Explicitly mask > sigrej outliers using the distribution of chi2 but only in the region that was actually fit.
                     # This prevents e.g. excessive masking of slit edges
-                    if False:
-                        outmask.flat[isub[igood1]] = outmask.flat[isub[igood1]] & (chi2[igood1] < chi2_sigrej) & (
+                    outmask.flat[isub[igood1]] = outmask.flat[isub[igood1]] & (chi2[igood1] < chi2_sigrej) & (
                                 sciivar.flat[isub[igood1]] > 0.0)
                     nrej = outmask.flat[isub[igood1]].sum()
                     msgs.info(

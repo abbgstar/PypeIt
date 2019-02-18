@@ -41,9 +41,6 @@ class PypeIt(object):
     """
     This class runs the primary calibration and extraction in PypeIt
 
-    .. todo::
-        Improve docstring...
-
     Args:
         pypeit_file (:obj:`str`):  PypeIt filename
         verbosity (:obj:`int`, optional):
@@ -69,6 +66,7 @@ class PypeIt(object):
             Name of the pypeit file to read.  PypeIt files have a specific
             set of valid formats. A description can be found `here`_
             (include doc link).
+        fitstbl (:obj:`pypit.metadata.PypeItMetaData`): holds the meta info
     """
 #    __metaclass__ = ABCMeta
 
@@ -99,9 +97,6 @@ class PypeIt(object):
         # Fitstbl
         self.fitstbl = PypeItMetaData(self.spectrograph, self.par, file_list=data_files,
                                       usrdata=usrdata, strict=True)
-        # Update par;  done explicilty here for transparency
-        #   Should only be updates related to usrdata
-        self.par = self.fitstbl.update_par(self.par)
 
         # The following could be put in a prepare_to_run() method in PypeItMetaData
         if 'setup' not in self.fitstbl.keys():
@@ -307,8 +302,7 @@ class PypeIt(object):
                 the name of a file with a previously PypeIt-reduced standard spectrum.
 
         Returns:
-            dict: The dictionary containing the primary outputs of
-            extraction
+            dict: The dictionary containing the primary outputs of extraction
         """
         # if show is set, clear the ginga channels at the start of each new sci_ID
         if self.show:
@@ -369,7 +363,7 @@ class PypeIt(object):
         # Return
         return sci_dict
 
-    def flexure_correct(self,sobjs,maskslits):
+    def flexure_correct(self, sobjs, maskslits):
         """
         Correct for flexure
 
@@ -390,7 +384,6 @@ class PypeIt(object):
                             out_dir=self.par['rdx']['redux_path'])
         else:
             msgs.info('Skipping flexure correction.')
-
 
     def helio_correct(self, sobjs, maskslits, frame, obstime):
         """
@@ -504,7 +497,7 @@ class PypeIt(object):
             std_outfile (str, optional):
 
         Returns:
-            five objects are returned::
+            eight objects are returned::
                 - ndarray: Science image
                 - ndarray: Science inverse variance image
                 - ndarray: Model of the sky
@@ -546,25 +539,8 @@ class PypeIt(object):
                                            objtype=self.objtype, setup=self.setup,
                                            det=det, binning=self.binning)
 
-        # Prep for manual extraction
-        if self.par['scienceimage']['manual'] is not None:
-            # This requires sci_files
-            if len(sci_files) > 1:  # Can only deal with one sci file or will have to think about using the first
-                msgs.warn("Taking first science frame in stack for manual extraction")
-            # Generate the hand_dict
-            base_sci = os.path.basename(sci_files[0])
-            manual_extract_dict = {}
-            for mex_par in self.par['scienceimage']['manual']:
-                if base_sci == mex_par['frame']:
-                    manual_extract_dict['hand_extract_spec'] = mex_par['spec']
-                    manual_extract_dict['hand_extract_spat'] = mex_par['spat']
-                    manual_extract_dict['hand_extract_det'] = mex_par['det']
-                    manual_extract_dict['hand_extract_fwhm'] = mex_par['fwhm']
-            # If it is empty, make it None
-            if len(manual_extract_dict) == 0:
-                manual_extract_dict = None
-        else:
-            manual_extract_dict = None
+        # Prep for manual extraction (if requested)
+        manual_extract_dict = self.fitstbl.get_manual_extract(frames, det)
 
         # Do one iteration of object finding, and sky subtract to get initial sky model
         self.sobjs_obj, self.nobj, skymask_init = \
