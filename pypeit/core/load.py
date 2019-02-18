@@ -276,13 +276,12 @@ def load_1dspec(fname, exten=None, extract='OPT', objname=None, flux=False):
     # Keywords for Table
     rsp_kwargs = {}
     rsp_kwargs['wave_tag'] = '{:s}_WAVE'.format(extract)
-    if flux:
+    if flux is True:
         rsp_kwargs['flux_tag'] = '{:s}_FLAM'.format(extract)
         rsp_kwargs['sig_tag'] = '{:s}_FLAM_SIG'.format(extract)
     else:
         rsp_kwargs['flux_tag'] = '{:s}_COUNTS'.format(extract)
         rsp_kwargs['sig_tag'] = '{:s}_COUNTS_SIG'.format(extract)
-
     # Identify extension from objname?
     if objname is not None:
         hdulist = fits.open(fname)
